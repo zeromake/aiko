@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+/.coverage
+
+/dist/
+/.vscode/
+/_build/
+/build/
+/*.egg-info/
+/.tox/
+/.pytest_cache/
+/.mypy_cache/

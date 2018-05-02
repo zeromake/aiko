@@ -21,6 +21,8 @@ tox = "*"
 "flake8-print" = "*"
 "flake8-strict" = "*"
 mypy = "*"
+yapf = "*"
+pygments = "*"
 
 [requires]
 python_version = "3.6"

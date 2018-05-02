@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import asyncio
 
-from . import Request, Response
+from .request import Request
+from .response import Response
 
 __all__ = [
     "Context",

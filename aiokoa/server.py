@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import asyncio
 from typing import Any, Awaitable, Callable, Optional
 
 from httptools import HttpRequestParser
 
-from . import Request
-from . import Response
+from .request import Request
+from .response import Response
 
 __all__ = ["ServerProtocol"]
 

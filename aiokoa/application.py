@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import asyncio
 # from datetime import datetime
 from asyncio.base_events import Server
@@ -13,12 +15,10 @@ from typing import (
     Type,
 )
 
-from . import (
-    Context,
-    Request,
-    Response,
-    ServerProtocol,
-)
+from .context import Context
+from .request import Request
+from .response import Response
+from .server import ServerProtocol
 
 __all__ = [
     "Application",
@@ -80,7 +80,11 @@ class Application(object):
             ssl=ssl,
         ))
 
-    def _next_middleware(self, middlewares: Iterator[FunctionType], ctx: Context) -> Callable[[], Any]:
+    def _next_middleware(
+        self,
+        middlewares: Iterator[FunctionType],
+        ctx: Context,
+    ) -> Callable[[], Any]:
         @asyncio.coroutine
         def next_call() -> Any:
             yield from self._middleware_call(middlewares, ctx)

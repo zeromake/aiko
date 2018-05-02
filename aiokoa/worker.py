@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import asyncio
 import os
 from asyncio.base_events import Server as AIOServer

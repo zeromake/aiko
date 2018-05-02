@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Callable, Generator, Optional
 
 from httptools import HttpRequestParser
 
@@ -24,7 +24,7 @@ class ServerProtocol(asyncio.Protocol):
                 Request,
                 Response,
             ],
-            Awaitable[None],
+            Generator[Any, None, None],
         ],
     ) -> None:
         self._loop = loop
@@ -52,10 +52,13 @@ class ServerProtocol(asyncio.Protocol):
         self._request.feed_data(data)
 
     @asyncio.coroutine
-    def complete_handle(self) -> Any:
+    def complete_handle(self) -> Generator[Any, None, None]:
         self._response = Response(self._loop, self._transport)
+        keep_alive = self._request.should_keep_alive
+        if not keep_alive:
+            self._response.set("Connection", "close")
         yield from self._handle(self._request, self._response)
-        if not self._request.should_keep_alive:
+        if not keep_alive:
             self._transport.close()
         # self._request_parser = None
         self._request = None

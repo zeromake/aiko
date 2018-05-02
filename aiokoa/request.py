@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Awaitable, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Generator, Optional
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
@@ -33,7 +33,7 @@ class Request(object):
         loop: Optional[asyncio.AbstractEventLoop],
         handle: Callable[
             [],
-            Awaitable[None],
+            Generator[Any, None, None],
         ],
     ) -> None:
         self._loop = loop

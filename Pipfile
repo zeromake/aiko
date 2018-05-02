@@ -1,5 +1,5 @@
 [[source]]
-url = "https://pypi.python.org/simple"
+url = "https://mirrors.aliyun.com/pypi/simple/"
 verify_ssl = true
 name = "pypi"
 
@@ -15,14 +15,8 @@ pytest = "*"
 uvloop = "*"
 gunicorn = "*"
 tox = "*"
-"flake8" = "*"
-"pep8-naming" = "*"
-"flake8-import-order" = "*"
-"flake8-print" = "*"
-"flake8-strict" = "*"
-mypy = "*"
 yapf = "*"
-pygments = "*"
+sphinx-rtd-theme = "*"
 
 [requires]
 python_version = "3.6"

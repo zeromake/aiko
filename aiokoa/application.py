@@ -4,15 +4,21 @@ import asyncio
 # from datetime import datetime
 from asyncio.base_events import Server
 from collections import Generator
+from signal import (
+    SIGINT,
+    SIGTERM,
+)
 from ssl import SSLContext
-from types import FunctionType
 from typing import (
     Any,
+    AsyncIterable,
     Callable,
+    Generator as TypeGenerator,
     Iterator,
     List,
     Optional,
     Type,
+    Union,
 )
 
 from .context import Context
@@ -23,6 +29,22 @@ from .server import ServerProtocol
 __all__ = [
     "Application",
     "App",
+]
+
+next_call_res_type = TypeGenerator[Any, None, None]
+next_call_type = Callable[[], next_call_res_type]
+middleware_res_type = Union[
+    bytes,
+    str,
+    None,
+]
+middleware_type = Callable[
+    [Context, next_call_type],
+    Union[
+        middleware_res_type,
+        TypeGenerator[Any, None, middleware_res_type],
+        AsyncIterable[middleware_res_type],
+    ],
 ]
 
 
@@ -64,7 +86,7 @@ class Application(object):
         self._request = request
         self._response = response
         self._context = context
-        self._middleware: List[FunctionType] = []
+        self._middleware: List[middleware_type] = []
 
     @property
     def context(self) -> Type[Context]:
@@ -107,7 +129,14 @@ class Application(object):
         :param port: the port of the server, default id ``5000``
         """
         listen = self.listen(host=host, port=port)
-        self._loop.run_until_complete(listen)
+        server = self._loop.run_until_complete(listen)
+
+        def close() -> None:
+            server.close()
+            self._loop.stop()
+        # print(type(server))
+        self._loop.add_signal_handler(SIGTERM, close)
+        self._loop.add_signal_handler(SIGINT, close)
         self._loop.run_forever()
 
     @asyncio.coroutine
@@ -116,7 +145,7 @@ class Application(object):
         loop: asyncio.AbstractEventLoop,
         sock: Any,
         ssl: SSLContext,
-    ) -> Server:
+    ) -> TypeGenerator[Any, None, Server]:
         if loop is not None and self._loop is not loop:
             self._loop = loop
         return (yield from self.listen(
@@ -126,24 +155,24 @@ class Application(object):
 
     def _next_middleware(
         self,
-        middlewares: Iterator[FunctionType],
+        middlewares: Iterator[middleware_type],
         ctx: Context,
-    ) -> Callable[[], Any]:
+    ) -> next_call_type:
         """
         生成 next_call 的调用
         使用迭代器，这个方法每调用一次都会指向下一个中间件。
         """
         @asyncio.coroutine
-        def next_call() -> Any:
+        def next_call() -> next_call_res_type:
             yield from self._middleware_call(middlewares, ctx, next_call)
         return next_call
 
     @asyncio.coroutine
     def _middleware_call(
         self,
-        middlewares: Iterator[FunctionType],
+        middlewares: Iterator[middleware_type],
         ctx: Context,
-        next_call: Callable[[], Any],
+        next_call: next_call_type,
     ) -> Any:
         """
         从迭代器中取出一个中间件，执行
@@ -155,7 +184,8 @@ class Application(object):
             return
         # next_call = self._next_middleware(middlewares, ctx)
         if asyncio.iscoroutinefunction(middleware):
-            body = yield from middleware(ctx, next_call)
+            temp: Any = middleware(ctx, next_call)
+            body = yield from temp
         else:
             body = middleware(ctx, next_call)
         if body is not None:
@@ -203,7 +233,7 @@ class Application(object):
         # 写出 body
         ctx.response.flush_body()
 
-    def use(self, middleware: FunctionType) -> None:
+    def use(self, middleware: middleware_type) -> None:
         """
         插入一个中间件
         """

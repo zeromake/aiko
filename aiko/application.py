@@ -53,7 +53,7 @@ class Application(object):
     Usually you create a :class:`Application` instance in your main module or
     in the :file:`__init__.py` file of your package like this::
         import asyncio
-        from aiokoa import App
+        from aiko import App
 
         loop = asyncio.get_event_loop()
         app = App(loop)

@@ -1,7 +1,7 @@
-aiokoa
+aiko
 ======
 
-aiokoa is a base asyncio's lightweight web application framework.
+aiko is a base asyncio's lightweight web application framework.
 It is designed to make `koa`_ api.
 
 Installing
@@ -11,8 +11,8 @@ Install by code
 
 .. code-block:: text
 
-    $ git clone https://github.com/zeromake/aiokoa
-    $ cd aiokoa
+    $ git clone https://github.com/zeromake/aiko
+    $ cd aiko
     $ python setup.py install
 
 A Simple Example
@@ -21,7 +21,7 @@ A Simple Example
 .. code-block:: python
 
     import asyncio
-    from aiokoa import App
+    from aiko import App
 
     loop = asyncio.get_event_loop()
     app = App(loop)

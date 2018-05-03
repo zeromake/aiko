@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'aiokoa'
+project = 'aiko'
 copyright = '2018, zeromake'
 author = 'zeromake'
 
@@ -111,7 +111,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'aiokoadoc'
+htmlhelp_basename = 'aikodoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -138,7 +138,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'aiokoa.tex', 'aiokoa Documentation',
+    (master_doc, 'aiko.tex', 'aiko Documentation',
      'zeromake', 'manual'),
 ]
 
@@ -148,7 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'aiokoa', 'aiokoa Documentation',
+    (master_doc, 'aiko', 'aiko Documentation',
      [author], 1)
 ]
 
@@ -159,8 +159,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'aiokoa', 'aiokoa Documentation',
-     author, 'aiokoa', 'One line description of project.',
+    (master_doc, 'aiko', 'aiko Documentation',
+     author, 'aiko', 'One line description of project.',
      'Miscellaneous'),
 ]
 

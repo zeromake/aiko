@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    aiokoa
+    aiko
     ~~~~~~
 
     export Request, Response, ServerProtocol, Context, App, Application

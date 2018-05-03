@@ -1,5 +1,5 @@
 import asyncio
-from aiokoa import App
+from aiko import App
 
 loop = asyncio.get_event_loop()
 app = App(loop)

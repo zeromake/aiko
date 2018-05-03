@@ -1,9 +1,9 @@
-.. aiokoa documentation master file, created by
+.. aiko documentation master file, created by
    sphinx-quickstart on Wed May  2 11:34:55 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to aiokoa's documentation!
+Welcome to aiko's documentation!
 ==================================
 
 .. toctree::

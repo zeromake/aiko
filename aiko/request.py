@@ -15,6 +15,9 @@ __all__ = [
 
 
 class Request(object):
+    """
+    请求
+    """
     __slots__ = [
         "_loop",
         "_headers",
@@ -54,23 +57,38 @@ class Request(object):
 
     @property
     def url(self) -> str:
+        """
+        全部url
+        """
         return self._current_url
 
     @url.setter
     def url(self, url: str) -> None:
+        """
+        url 重写
+        """
         self._URL = parse_url(encode_str(url))
         self._current_url = url
 
     @property
     def original_url(self) -> str:
+        """
+        原始 url
+        """
         return self._original_url or self._current_url
 
     @property
     def parser(self) -> HttpRequestParser:
+        """
+        httptools.HttpRequestParser 对象
+        """
         return self._parser
 
     @parser.setter
     def parser(self, parser: HttpRequestParser) -> None:
+        """
+        由于这个对象实例化需要作为 HttpRequestParser 所以只能后面设置
+        """
         if self._parser is None:
             self._parser = parser
 
@@ -82,6 +100,9 @@ class Request(object):
 
     @property
     def should_keep_alive(self) -> bool:
+        """
+        判断是否为 keep_alive 是开启长连接
+        """
         return self._parser.should_keep_alive()
 
     def on_url(self, url: bytes) -> None:
@@ -93,13 +114,19 @@ class Request(object):
         self._original_url = self._current_url
 
     def on_header(self, name: bytes, value: bytes) -> None:
+        """
+        header 回调
+        """
         name_ = decode_bytes(name).casefold()
         val = decode_bytes(value)
         if name_ == "content-length":
+            # 设置 content-length
             self._length = int(val)
         elif name_ == "cookie":
+            # 加载上次的 cookie
             self._cookies.load(val)
         if name_ in self._headers:
+            # 多个相同的 header
             old: Union[str, List[str]] = self._headers[name_]
             if isinstance(old, list):
                 old.append(val)
@@ -109,34 +136,59 @@ class Request(object):
             self._headers[name_] = val
 
     def on_headers_complete(self) -> None:
+        """
+        header 回调完成
+        """
         self._loop.create_task(self._handle())
         return None
 
     @property
     def method(self) -> str:
+        """
+        获取请求方法
+        """
         if self._method is None:
             self._method = decode_bytes(self._parser.get_method())
         return self._method
 
     @property
     def version(self) -> str:
+        """
+        获取 http 版本
+        """
         if self._version is None:
             self._version = self._parser.get_http_version()
         return self._version
 
     @property
     def length(self) -> int:
+        """
+        获取 body 长度
+        """
         return self._length
 
     def get(self, name: str) -> Union[None, str, List[str]]:
+        """
+        获取 header
+        """
         name = name.casefold()
         if name in self._headers:
             return self._headers[name]
         else:
             return None
 
+    def set(self, name: str, value: str) -> None:
+        """
+        重写请求中的 header, 不推荐使用
+        """
+        name = name.casefold()
+        self._headers[name] = value
+
     @property
     def path(self) -> str:
+        """
+        获取 path
+        """
         if "path" in self._cache:
             return self._cache["path"]
         path = decode_bytes(self._URL.path)
@@ -145,12 +197,21 @@ class Request(object):
 
     @property
     def cookies(self) -> Cookies:
+        """
+        在 on_headers_complete 回调后可以获得这次请求的 cookie
+        """
         return self._cookies
 
     @property
     def headers(self) -> Dict[str, Union[str, List[str]]]:
+        """
+        在 on_headers_complete 回调后可以获得这次请求的 headers
+        """
         return self._headers
 
     @property
     def header(self) -> Dict[str, Union[str, List[str]]]:
+        """
+        headers 的别名
+        """
         return self._headers

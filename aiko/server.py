@@ -40,11 +40,17 @@ class ServerProtocol(asyncio.Protocol):
         self._transport = transport
 
     def connection_lost(self, exc: Exception) -> None:
+        """
+        socket 断开连接
+        """
         self._transport = None
         self._request = None
         # self._request_parser = None
 
     def data_received(self, data: bytes) -> None:
+        """
+        socket 收到数据
+        """
         if self._request is None:
             # future = self._loop.create_future()
             self._request = Request(self._loop, self.complete_handle)
@@ -53,6 +59,9 @@ class ServerProtocol(asyncio.Protocol):
 
     @asyncio.coroutine
     def complete_handle(self) -> Generator[Any, None, None]:
+        """
+        完成回调
+        """
         self._response = Response(self._loop, self._transport)
         keep_alive = self._request.should_keep_alive
         if not keep_alive:
@@ -62,3 +71,4 @@ class ServerProtocol(asyncio.Protocol):
             self._transport.close()
         # self._request_parser = None
         self._request = None
+        self._response = None

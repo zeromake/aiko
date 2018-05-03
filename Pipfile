@@ -17,6 +17,7 @@ gunicorn = "*"
 tox = "*"
 yapf = "*"
 sphinx-rtd-theme = "*"
+twine = "*"
 
 [requires]
 python_version = "3.6"

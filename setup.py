@@ -35,7 +35,6 @@ setup(
     ],
     classifiers=[
         'Environment :: Web Environment',
-        'Framework :: aiko',
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',

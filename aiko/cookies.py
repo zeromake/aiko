@@ -18,8 +18,12 @@ class Cookies(BaseCookie):
     def get(self, key: Any, default: Any = None) -> Any:
         if key in self:
             return self[key].value
-        else:
-            return default
+        return default
+
+    def set(self, key: str, value: str, opt: dict = None) -> None:
+        self[key] = value
+        if opt is not None:
+            self[key].update(opt)
 
     def __iter__(self) -> Any:
         return super().__iter__()

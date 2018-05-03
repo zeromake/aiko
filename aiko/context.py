@@ -6,6 +6,7 @@ from typing import Any, List, Optional
 from .request import Request
 from .response import Response
 
+
 __all__ = [
     "Context",
 ]
@@ -66,6 +67,9 @@ class ContextCookie(dict):
 
     def get(self, key: Any, default: Any = None) -> Any:
         return self._req_cookies.get(key, default)
+
+    def set(self, key: str, value: str, opt: dict = None) -> None:
+        self._res_cookies.set(key, value, opt)
 
     def headers(self) -> Optional[List[str]]:
         return self._res_cookies.headers()

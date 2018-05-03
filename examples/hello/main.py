@@ -8,7 +8,7 @@ def hello(ctx, next_call):
     if ctx.request.path == "/":
         return "Hello, World!"
     elif ctx.request.path == "/test":
-        amin = ctx.cookies.get("amin", 0)
+        amin = ctx.cookies.get("amin") or 0
         ctx.cookies["amin"] = str(int(amin) + 1)
         return "test cookie"
     else:

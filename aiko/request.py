@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Any, Callable, Dict, Generator, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional, Union
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
 
+from .cookies import Cookies
 from .utils import decode_bytes, encode_str
 
 __all__ = [
@@ -25,6 +26,8 @@ class Request(object):
         "_length",
         "_URL",
         "_original_url",
+        "_cache",
+        "_cookies",
         # "start_time"
     ]
 
@@ -37,15 +40,17 @@ class Request(object):
         ],
     ) -> None:
         self._loop = loop
-        self._headers: Dict[str, str] = {}
+        self._headers: Dict[str, Union[str, List[str]]] = {}
         self._current_url: Optional[str] = None
         self._handle = handle
         self._parser: Optional[HttpRequestParser] = None
         self._method: Optional[str] = None
         self._version: Optional[str] = None
         self._length: Optional[int] = None
-        self._URL = None
+        self._URL: Any = None
         self._original_url: Optional[str] = None
+        self._cache: Dict[str, Any] = {}
+        self._cookies = Cookies()
 
     @property
     def url(self) -> str:
@@ -89,9 +94,19 @@ class Request(object):
 
     def on_header(self, name: bytes, value: bytes) -> None:
         name_ = decode_bytes(name).casefold()
+        val = decode_bytes(value)
         if name_ == "content-length":
-            self._length = int(decode_bytes(value))
-        self._headers[name_] = decode_bytes(value)
+            self._length = int(val)
+        elif name_ == "cookie":
+            self._cookies.load(val)
+        if name_ in self._headers:
+            old: Union[str, List[str]] = self._headers[name_]
+            if isinstance(old, list):
+                old.append(val)
+            else:
+                self._headers[name_] = [old, val]
+        else:
+            self._headers[name_] = val
 
     def on_headers_complete(self) -> None:
         self._loop.create_task(self._handle())
@@ -112,3 +127,30 @@ class Request(object):
     @property
     def length(self) -> int:
         return self._length
+
+    def get(self, name: str) -> Union[None, str, List[str]]:
+        name = name.casefold()
+        if name in self._headers:
+            return self._headers[name]
+        else:
+            return None
+
+    @property
+    def path(self) -> str:
+        if "path" in self._cache:
+            return self._cache["path"]
+        path = decode_bytes(self._URL.path)
+        self._cache["path"] = path
+        return path
+
+    @property
+    def cookies(self) -> Cookies:
+        return self._cookies
+
+    @property
+    def headers(self) -> Dict[str, Union[str, List[str]]]:
+        return self._headers
+
+    @property
+    def header(self) -> Dict[str, Union[str, List[str]]]:
+        return self._headers

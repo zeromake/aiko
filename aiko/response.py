@@ -5,8 +5,9 @@ import json
 import os
 from enum import Enum
 from io import RawIOBase
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
+from .cookies import Cookies
 from .utils import encode_str
 
 __all__ = [
@@ -99,6 +100,7 @@ class Response(object):
         "_body",
         "_default_type",
         "_charset",
+        "_cookies",
         "header_send",
         "body_send",
     ]
@@ -114,7 +116,7 @@ class Response(object):
         self._version = version
         self._socket = transport.get_extra_info("socket")
         self._fileno = self._socket.fileno()
-        self._headers: Dict[str, str] = {}
+        self._headers: Dict[str, Union[str, List[str]]] = {}
         self._status = 200
         self._message = b"OK"
         self.length: Optional[int] = None
@@ -124,6 +126,7 @@ class Response(object):
         self.header_send: bool = False
         self.body_send: bool = False
         self._default_type: Optional[str] = None
+        self._cookies = Cookies()
 
     @property
     def status(self) -> int:
@@ -149,18 +152,27 @@ class Response(object):
         else:
             self._transport.write(data)
 
-    def set(self, name: str, value: str) -> None:
+    def get(self, name: str) -> Union[None, str, List[str]]:
+        """
+        获取 header
+        """
+        if name in self._headers:
+            return self._headers[name]
+        else:
+            return None
+
+    def set(self, name: str, value: Union[str, List[str]]) -> None:
         """
         设置 header
         """
         self._headers[name] = value
 
     @property
-    def header(self) -> Dict[str, str]:
+    def header(self) -> Dict[str, Union[str, List[str]]]:
         return self._headers
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> Dict[str, Union[str, List[str]]]:
         return self._headers
 
     @property
@@ -209,16 +221,26 @@ class Response(object):
             sync,
         )
         for name, value in self._headers.items():
-            self.write(
-                b"%s: %s\r\n" % (
-                    encode_str(name),
-                    encode_str(value),
-                ),
-                sync,
-            )
+            name_byte: bytes = encode_str(name)
+            if isinstance(value, list):
+                for val in value:
+                    self.write(
+                        b"%s: %s\r\n" % (
+                            name_byte,
+                            encode_str(val),
+                        ),
+                        sync,
+                    )
+            else:
+                val = value
+                self.write(
+                    b"%s: %s\r\n" % (
+                        name_byte,
+                        encode_str(value),
+                    ),
+                    sync,
+                )
         self.write(b"\r\n", sync)
-        # headers_byte: bytes = headers.getvalue()
-        # self.write(headers_byte, sync)
 
     def default_content(self) -> None:
         """
@@ -246,3 +268,7 @@ class Response(object):
             return
         else:
             self.write(self._body)
+
+    @property
+    def cookies(self) -> Cookies:
+        return self._cookies

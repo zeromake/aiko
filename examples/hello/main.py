@@ -5,7 +5,16 @@ loop = asyncio.get_event_loop()
 app = App(loop)
 
 def hello(ctx, next_call):
-    return "Hello, World!"
+    if ctx.request.path == "/":
+        return "Hello, World!"
+    elif ctx.request.path == "/test":
+        amin = ctx.cookies.get("amin", 0)
+        ctx.cookies["amin"] = str(int(amin) + 1)
+        return "test cookie"
+    else:
+        del ctx.cookies["amin"]
+        return "del amin"
+
 
 app.use(hello)
 

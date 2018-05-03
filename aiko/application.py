@@ -21,6 +21,7 @@ from typing import (
     Union,
 )
 
+
 from .context import Context
 from .request import Request
 from .response import Response
@@ -228,6 +229,9 @@ class Application(object):
         next_call = self._next_middleware(middleware_iter, ctx)
         # 顺序执行中间件
         yield from self._middleware_call(middleware_iter, ctx, next_call)
+        cookie_headers = ctx.cookies.headers()
+        if cookie_headers is not None:
+            ctx.response.set("Set-Cookie", cookie_headers)
         # 写出 headers
         ctx.response.flush_headers()
         # 写出 body

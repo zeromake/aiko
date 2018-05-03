@@ -10,8 +10,8 @@ Welcome to aiokoa's documentation!
     :maxdepth: 2
     :caption: Contents:
 
-    README
-    CHANGELOG
+    README <README>
+    CHANGELOG <CHANGELOG>
 
 
 

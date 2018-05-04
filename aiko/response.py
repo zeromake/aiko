@@ -186,6 +186,7 @@ class Response(object):
             self._default_type = None
         elif isinstance(body, bytes):
             self._default_type = "application/octet-stream"
+            raw_body = body
         elif isinstance(body, str):
             self._default_type = "text/plain"
             raw_body = encode_str(body)

@@ -203,8 +203,6 @@ class Application(object):
                             continue
                     if gen is not None:
                         body = gen
-                if isinstance(body, Generator):
-                    body = None
             elif asyncio.iscoroutine(body):
                 # 处理中间件返回了一个 coroutine 对象需要 await
                 try:
@@ -212,7 +210,7 @@ class Application(object):
                 except Exception:
                     pass
             # 中间件返回的结果如果不为空设置到 body
-            if body is not None:
+            if body is not None and not isinstance(body, Generator):
                 ctx.response.body = body
 
     @asyncio.coroutine

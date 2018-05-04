@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'aiko'
-copyright = '2018, zeromake'
+copyright = '2018, zeromake<a390720046@gmail.com>'
 author = 'zeromake'
 
 # The short X.Y version
@@ -85,6 +85,7 @@ pygments_style = 'sphinx'
 #
 # html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
+# html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -139,7 +140,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'aiko.tex', 'aiko Documentation',
-     'zeromake', 'manual'),
+     'zeromake<a390720046@gmail.com>', 'manual'),
 ]
 
 

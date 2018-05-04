@@ -6,13 +6,13 @@
 Welcome to aiko's documentation!
 ==================================
 
+Contents:
+
 .. toctree::
     :maxdepth: 2
-    :caption: Contents:
 
     README <README>
     CHANGELOG <CHANGELOG>
-
 
 
 Indices and tables

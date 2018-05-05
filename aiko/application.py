@@ -209,8 +209,19 @@ class Application(object):
                     body = yield from body
                 except Exception:
                     pass
+            if isinstance(body, tuple):
+                flag = True
+                for item in body:
+                    if flag:
+                        ctx.response.body = item
+                        flag = False
+                    elif isinstance(item, int):
+                        ctx.response.status = item
+                    elif isinstance(item, dict):
+                        for key, val in item.items():
+                            ctx.response.set(key, val)
             # 中间件返回的结果如果不为空设置到 body
-            if body is not None and not isinstance(body, Generator):
+            elif body is not None and not isinstance(body, Generator):
                 ctx.response.body = body
 
     @asyncio.coroutine

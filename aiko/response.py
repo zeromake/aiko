@@ -5,7 +5,8 @@ import json
 import os
 from enum import Enum
 from io import RawIOBase
-from typing import Dict, List, Optional, Union
+from socket import socket
+from typing import Any, Dict, List, Optional, Union
 
 from .cookies import Cookies
 from .utils import encode_str
@@ -77,6 +78,12 @@ STATUS_CODES = {
     511: b'Network Authentication Required',
 }
 
+DEFAULT_TYPE = {
+    1: "application/octet-stream",
+    2: "text/plain",
+    3: "application/json",
+}
+
 
 class BodyType(Enum):
     undefined = 0
@@ -98,11 +105,10 @@ class Response(object):
         "_message",
         "length",
         "_body",
-        "_default_type",
         "_charset",
         "_cookies",
-        "header_send",
-        "body_send",
+        "_headers_sent",
+        "type",
     ]
 
     def __init__(
@@ -114,18 +120,17 @@ class Response(object):
         self._loop = loop
         self._transport = transport
         self._version = version
-        self._socket = transport.get_extra_info("socket")
+        self._socket: socket = transport.get_extra_info("socket")
         self._fileno = self._socket.fileno()
         self._headers: Dict[str, Union[str, List[str]]] = {}
         self._status = 200
         self._message = b"OK"
         self.length: Optional[int] = None
-        self._body: Optional[bytes] = None
+        self.type: Optional[str] = None
+        self._body: Union[bytes, str, List[Any], Dict[Any, Any], RawIOBase, None] = None
         # self._body_type: int = BodyType.undefined
         self._charset: Optional[str] = None
-        self.header_send: bool = False
-        self.body_send: bool = False
-        self._default_type: Optional[str] = None
+        self._headers_sent: bool = False
         self._cookies = Cookies()
 
     @property
@@ -176,43 +181,63 @@ class Response(object):
         return self._headers
 
     @property
-    def body(self) -> Union[bytes, None]:
+    def body(self) -> Union[bytes, str, List[Any], Dict[Any, Any], RawIOBase, None]:
         return self._body
 
     @body.setter
-    def body(self, body: Union[bytes, str, list, dict, RawIOBase]) -> None:
-        raw_body: Optional[bytes] = None
-        if body is None:
-            self._default_type = None
-        elif isinstance(body, bytes):
-            self._default_type = "application/octet-stream"
-            raw_body = body
-        elif isinstance(body, str):
-            self._default_type = "text/plain"
-            raw_body = encode_str(body)
-        elif isinstance(body, (list, dict)):
-            self._default_type = "application/json"
-            raw_body = encode_str(json.dumps(body))
-        elif isinstance(body, RawIOBase):
-            self._default_type = "application/octet-stream"
-            temp = body.read()
-            body.close()
-            raw_body = temp
-        else:
-            self._default_type = None
-        self._body = raw_body
+    def body(self, body: Union[bytes, str, list, dict, RawIOBase, None]) -> None:
+        self._body = body
+
+    def handel_default(self) -> None:
+        """
+        处理设置到body上的数据默认 headers
+        """
+        raw_body = self._body
+        body: bytes = None
+        default_type: Optional[int] = None
+        if raw_body is None:
+            pass
+        elif isinstance(raw_body, bytes):
+            # body为bytes
+            default_type = 2
+            body = raw_body
+        elif isinstance(raw_body, str):
+            # body 为字符串
+            default_type = 2
+            body = encode_str(raw_body)
+        elif isinstance(raw_body, (list, dict)):
+            # body 为json
+            default_type = 3
+            body = encode_str(json.dumps(raw_body))
+        elif isinstance(raw_body, RawIOBase):
+            # body 为文件
+            default_type = 1
+            body = raw_body.read()
+            raw_body.close()
+        if "Content-Length" not in self._headers and \
+                "Transfer-Encoding" not in self._headers \
+                or self._headers["Transfer-Encoding"] != "chunked":
+            if self.length is None:
+                if body is not None:
+                    self.length = len(body)
+                else:
+                    self.length = 0
+            # 设置默认 Content-Length
+            self.set("Content-Length", str(self.length))
+        if "Content-Type" not in self._headers.keys():
+            if self.type or default_type:
+                # 设置默认 Content-Type
+                self.set("Content-Type", self.type or DEFAULT_TYPE[default_type])
+        self._body = body
 
     def flush_headers(self, sync: bool = False) -> None:
         """
         通过异步写入 header
         """
-        if self.header_send:
+        if self._headers_sent:
             return
-        # if self.length is not None and "Content-Length":
-        #     self.set("Content-Length", str(self.length))
-        self.default_content()
-        self.header_send = True
-        # headers = BytesIO()
+        self._headers_sent = True
+        self.handel_default()
         self.write(
             b"HTTP/%s %d %s\r\n" % (
                 encode_str(self._version),
@@ -243,32 +268,16 @@ class Response(object):
                 )
         self.write(b"\r\n", sync)
 
-    def default_content(self) -> None:
-        """
-
-        """
-        if "Content-Type" not in self.headers and self._default_type:
-            self.set("Content-Type", self._default_type)
-        if "Content-Length" not in self.headers:
-            if self._body is None:
-                self.set("Content-Length", "0")
-            else:
-                length = self.length
-                if length is None:
-                    length = len(self._body)
-                self.set("Content-Length", str(length))
-
-    def flush_body(self) -> None:
+    def flush_body(self) -> bool:
         """
         发送内容体
         """
-        if self.body_send:
-            return
-        self.body_send = True
         if self._body is None:
-            return
-        else:
+            return False
+        elif isinstance(self._body, bytes):
             self.write(self._body)
+            return True
+        return False
 
     @property
     def cookies(self) -> Cookies:

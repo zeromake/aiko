@@ -41,11 +41,12 @@ class Context(object):
     def cookies(self) -> 'ContextCookie':
         return self._cookies
 
-    def __del__(self):
+    def __del__(self) -> None:
         self._cookies = None
         self._request = None
         self._response = None
         self._loop = None
+
 
 class ContextCookie(dict):
     """

@@ -16,12 +16,10 @@ def hello(ctx, next_call):
         yield "del amin"
     else:
         yield next_call()
+        # yield None
 
 def not_found(ctx, next_call):
-    ctx.response.status = 404
-    ctx.response.length = 9
-    ctx.response.set("Content-Type", "text/plain")
-    return b"Not Found"
+    return b"Not Found", 404, {"Content-Type": "text/plain"}
 
 app.use(hello)
 app.use(not_found)

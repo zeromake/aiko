@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Any, Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional, cast
 
 from httptools import HttpRequestParser
 
@@ -53,7 +53,10 @@ class ServerProtocol(asyncio.Protocol):
         """
         if self._request is None:
             # future = self._loop.create_future()
-            self._request = Request(self._loop, self.complete_handle)
+            self._request = Request(
+                cast(asyncio.AbstractEventLoop, self._loop),
+                self.complete_handle,
+            )
             self._request.parser = HttpRequestParser(self._request)
         self._request.feed_data(data)
 
@@ -62,12 +65,14 @@ class ServerProtocol(asyncio.Protocol):
         """
         完成回调
         """
-        self._response = Response(self._loop, self._transport)
+        if self._request is None:
+            return
+        self._response = Response(self._loop, cast(asyncio.Transport, self._transport))
         keep_alive = self._request.should_keep_alive
         if not keep_alive:
             self._response.set("Connection", "close")
         yield from self._handle(self._request, self._response)
-        if not keep_alive:
+        if not keep_alive and self._transport is not None:
             self._transport.close()
         # self._request_parser = None
         self._request = None

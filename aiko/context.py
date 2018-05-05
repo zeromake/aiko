@@ -42,10 +42,10 @@ class Context(object):
         return self._cookies
 
     def __del__(self) -> None:
-        self._cookies = None
-        self._request = None
-        self._response = None
-        self._loop = None
+        del self._cookies
+        del self._request
+        del self._response
+        del self._loop
 
 
 class ContextCookie(dict):

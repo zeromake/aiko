@@ -27,6 +27,8 @@ class GunicornWorker(Worker):
         super().init_process()
 
     def run(self) -> None:
+        if self.loop is None:
+            return
         create_server = asyncio.ensure_future(self._run(), loop=self.loop)  # type: ignore
         try:
             self.loop.run_until_complete(create_server)
@@ -36,6 +38,8 @@ class GunicornWorker(Worker):
             self.loop.close()
 
     async def _check_alive(self) -> None:
+        if self.loop is None:
+            return
         pid = os.getpid()
         try:
             while self.alive:  # type: ignore

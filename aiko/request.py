@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Any, Callable, Dict, Generator, List, Optional, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
@@ -36,7 +36,7 @@ class Request(object):
 
     def __init__(
         self,
-        loop: Optional[asyncio.AbstractEventLoop],
+        loop: asyncio.AbstractEventLoop,
         handle: Callable[
             [],
             Generator[Any, None, None],
@@ -44,14 +44,14 @@ class Request(object):
     ) -> None:
         self._loop = loop
         self._headers: Dict[str, Union[str, List[str]]] = {}
-        self._current_url: Optional[str] = None
+        self._current_url: bytes = b""
         self._handle = handle
-        self._parser: Optional[HttpRequestParser] = None
+        self._parser: HttpRequestParser = cast(HttpRequestParser, None)
         self._method: Optional[str] = None
         self._version: Optional[str] = None
         self._length: Optional[int] = None
         self._URL: Any = None
-        self._original_url: Optional[str] = None
+        self._original_url: Optional[bytes] = None
         self._cache: Dict[str, Any] = {}
         self._cookies = Cookies()
 
@@ -60,25 +60,30 @@ class Request(object):
         """
         全部url
         """
-        return self._current_url
+        return decode_bytes(self._current_url)
 
     @url.setter
     def url(self, url: str) -> None:
         """
         url 重写
         """
-        self._URL = parse_url(encode_str(url))
-        self._current_url = url
+        self._current_url = encode_str(url)
+
+    @property
+    def URL(self) -> Any:
+        if self._URL is None:
+            self._URL = parse_url(self._current_url)
+        return self._URL
 
     @property
     def original_url(self) -> str:
         """
         原始 url
         """
-        return self._original_url or self._current_url
+        return decode_bytes(self._original_url or self._current_url)
 
     @property
-    def parser(self) -> HttpRequestParser:
+    def parser(self) -> Optional[HttpRequestParser]:
         """
         httptools.HttpRequestParser 对象
         """
@@ -96,22 +101,24 @@ class Request(object):
         """
         代理 feed_data
         """
-        self._parser.feed_data(data)
+        if self._parser is not None:
+            self._parser.feed_data(data)
 
     @property
-    def should_keep_alive(self) -> bool:
+    def should_keep_alive(self) -> Optional[bool]:
         """
         判断是否为 keep_alive 是开启长连接
         """
-        return self._parser.should_keep_alive()
+        if self._parser is not None:
+            return self._parser.should_keep_alive()
+        return None
 
     def on_url(self, url: bytes) -> None:
         """
         httptools url callback
         """
-        self._URL = parse_url(url)
-        self._current_url = decode_bytes(url)
-        self._original_url = self._current_url
+        self._current_url = url
+        self._original_url = url
 
     def on_header(self, name: bytes, value: bytes) -> None:
         """
@@ -140,7 +147,6 @@ class Request(object):
         header 回调完成
         """
         self._loop.create_task(self._handle())
-        return None
 
     @property
     def method(self) -> str:
@@ -152,7 +158,7 @@ class Request(object):
         return self._method
 
     @property
-    def version(self) -> str:
+    def version(self) -> Optional[str]:
         """
         获取 http 版本
         """
@@ -161,7 +167,7 @@ class Request(object):
         return self._version
 
     @property
-    def length(self) -> int:
+    def length(self) -> Optional[int]:
         """
         获取 body 长度
         """
@@ -191,7 +197,7 @@ class Request(object):
         """
         if "path" in self._cache:
             return self._cache["path"]
-        path = decode_bytes(self._URL.path)
+        path = decode_bytes(self.URL.path)
         self._cache["path"] = path
         return path
 

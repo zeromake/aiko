@@ -78,7 +78,7 @@ STATUS_CODES = {
     511: b'Network Authentication Required',
 }
 
-DEFAULT_TYPE = {
+DEFAULT_TYPE: Dict[int, str] = {
     1: "application/octet-stream",
     2: "text/plain",
     3: "application/json",
@@ -114,7 +114,7 @@ class Response(object):
     def __init__(
         self,
         loop: asyncio.AbstractEventLoop,
-        transport: Optional[asyncio.Transport],
+        transport: asyncio.Transport,
         version: str = "1.1",
     ) -> None:
         self._loop = loop
@@ -132,6 +132,14 @@ class Response(object):
         self._charset: Optional[str] = None
         self._headers_sent: bool = False
         self._cookies = Cookies()
+
+    @property
+    def headers_sent(self) -> bool:
+        return self._headers_sent
+
+    @headers_sent.setter
+    def headers_sent(self, sent: bool) -> None:
+        self._headers_sent = sent
 
     @property
     def status(self) -> int:
@@ -193,8 +201,8 @@ class Response(object):
         处理设置到body上的数据默认 headers
         """
         raw_body = self._body
-        body: bytes = None
-        default_type: Optional[int] = None
+        body: Optional[bytes] = None
+        default_type: int = 1
         if raw_body is None:
             pass
         elif isinstance(raw_body, bytes):
@@ -225,9 +233,10 @@ class Response(object):
             # 设置默认 Content-Length
             self.set("Content-Length", str(self.length))
         if "Content-Type" not in self._headers.keys():
-            if self.type or default_type:
+            type_str = self.type or DEFAULT_TYPE.get(default_type)
+            if type_str is not None:
                 # 设置默认 Content-Type
-                self.set("Content-Type", self.type or DEFAULT_TYPE[default_type])
+                self.set("Content-Type", type_str)
         self._body = body
 
     def flush_headers(self, sync: bool = False) -> None:

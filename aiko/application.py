@@ -19,6 +19,7 @@ from typing import (
     Optional,
     Type,
     Union,
+    cast,
 )
 
 
@@ -82,7 +83,7 @@ class Application(object):
         response: Type[Response] = Response,
         context: Type[Context] = Context,
     ) -> None:
-        self._loop = loop
+        self._loop: Optional[asyncio.AbstractEventLoop] = loop
         self._protocol = protocol
         self._request = request
         self._response = response
@@ -115,9 +116,10 @@ class Application(object):
         """
         bind host, port or sock
         """
-        return (yield from self._loop.create_server(
+        loop = cast(asyncio.AbstractEventLoop, self._loop)
+        return (yield from loop.create_server(
             lambda: self._protocol(
-                loop=self._loop,
+                loop=loop,
                 handle=self._handle,
             ),
             **kwargs,
@@ -129,16 +131,17 @@ class Application(object):
         :param host: the hostname to listen on, default is ``'0.0.0.0'``
         :param port: the port of the server, default id ``5000``
         """
+        loop = cast(asyncio.AbstractEventLoop, self._loop)
         listen = self.listen(host=host, port=port)
-        server = self._loop.run_until_complete(listen)
+        server = loop.run_until_complete(listen)
 
         def close() -> None:
             server.close()
-            self._loop.stop()
+            loop.stop()
         # print(type(server))
-        self._loop.add_signal_handler(SIGTERM, close)
-        self._loop.add_signal_handler(SIGINT, close)
-        self._loop.run_forever()
+        loop.add_signal_handler(SIGTERM, close)
+        loop.add_signal_handler(SIGINT, close)
+        loop.run_forever()
 
     @asyncio.coroutine
     def create_server(
@@ -218,8 +221,9 @@ class Application(object):
                     elif isinstance(item, int):
                         ctx.response.status = item
                     elif isinstance(item, dict):
-                        for key, val in item.items():
-                            ctx.response.set(key, val)
+                        ctx.response.headers.update(item)
+                        # for key, val in item.items():
+                        #     ctx.response.set(key, val)
             # 中间件返回的结果如果不为空设置到 body
             elif body is not None and not isinstance(body, Generator):
                 ctx.response.body = body
@@ -231,7 +235,11 @@ class Application(object):
         """
         # request.start_time = datetime.now().timestamp()
         # 创建一个新的会话上下文
-        ctx = self._context(self._loop, request, response)
+        ctx = self._context(
+            cast(asyncio.AbstractEventLoop, self._loop),
+            request,
+            response,
+        )
         # 把当前注册的中间件转为迭代器
         middleware_iter = iter(self._middleware)
         # 通过迭代器的模式生成一个执行下一个中间的调用方法

@@ -18,6 +18,7 @@ tox = "*"
 yapf = "*"
 sphinx-rtd-theme = "*"
 twine = "*"
+aiohttp = "*"
 
 [requires]
 python_version = "3.6"

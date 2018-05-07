@@ -13,13 +13,13 @@ from typing import (
     Any,
     AsyncIterable,
     Callable,
+    cast,
     Generator as TypeGenerator,
     Iterator,
     List,
     Optional,
     Type,
     Union,
-    cast,
 )
 
 
@@ -73,6 +73,7 @@ class Application(object):
         "_response",
         "_context",
         "_middleware",
+        "proxy",
     ]
 
     def __init__(
@@ -89,6 +90,7 @@ class Application(object):
         self._response = response
         self._context = context
         self._middleware: List[middleware_type] = []
+        self.proxy = False
 
     @property
     def context(self) -> Type[Context]:
@@ -239,7 +241,10 @@ class Application(object):
             cast(asyncio.AbstractEventLoop, self._loop),
             request,
             response,
+            self,
         )
+        request.app = self
+        response.app = self
         # 把当前注册的中间件转为迭代器
         middleware_iter = iter(self._middleware)
         # 通过迭代器的模式生成一个执行下一个中间的调用方法

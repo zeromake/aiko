@@ -109,6 +109,7 @@ class Response(object):
         "_cookies",
         "_headers_sent",
         "type",
+        "_app",
     ]
 
     def __init__(
@@ -132,6 +133,15 @@ class Response(object):
         self._charset: Optional[str] = None
         self._headers_sent: bool = False
         self._cookies = Cookies()
+        self._app: Any = None
+
+    @property
+    def app(self) -> Any:
+        return self._app
+
+    @app.setter
+    def app(self, app: Any) -> None:
+        self._app = app
 
     @property
     def headers_sent(self) -> bool:

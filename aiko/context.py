@@ -19,11 +19,21 @@ class Context(object):
         loop: asyncio.AbstractEventLoop,
         request: Request,
         response: Response,
+        app: Any,
     ) -> None:
         self._loop = loop
         self._request = request
         self._response = response
         self._cookies = ContextCookie(self)
+        self._app: Any = app
+
+    @property
+    def app(self) -> Any:
+        return self._app
+
+    @app.setter
+    def app(self, app: Any) -> None:
+        self._app = app
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:

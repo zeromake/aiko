@@ -56,7 +56,7 @@ class ServerProtocol(asyncio.Protocol):
             self._request = Request(
                 cast(asyncio.AbstractEventLoop, self._loop),
                 self.complete_handle,
-                bool(self._transport.get_extra_info('sslcontext')),
+                bool(cast(asyncio.Transport, self._transport).get_extra_info('sslcontext')),
             )
             self._request.parser = HttpRequestParser(self._request)
         self._request.feed_data(data)

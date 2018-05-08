@@ -38,7 +38,7 @@ class BaseTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(None)
+        asyncio.set_event_loop(self.loop)
 
     def tearDown(self) -> None:
         self.loop.close()
@@ -61,7 +61,7 @@ class AppTest(BaseTest):
     @asyncio.coroutine
     def listen(self) -> Any:
         if self.server is None:
-            self.server = yield from self.app.listen(
+            self.server = yield from cast(App, self.app).listen(
                 host=self.HOST,
                 port=self.PORT,
             )

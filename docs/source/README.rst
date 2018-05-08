@@ -48,4 +48,26 @@ Todo
 ----
 
 - [ ] request api like koa
+    - [ ] `url`
+    - [ ] `path`
+    - [ ] `query`
+    - [ ] `querystring`
+    - [ ] `search`
+    - [ ] `originalUrl` -> `original_url`
+    - [ ] `href`
+    - [x] `origin`
+    - [x] `protocol`
+    - [x] `host`
+    - [x] `hostname`
+    - [x] `ips`
+    - [x] `ip`
+    - [x] `proxy`
+    - [x] `secure`
+    - [x] `charset`
+    - [x] `type`
+    - [x] `header`
+    - [x] `headers`
+    - [x] `socket`
+    - [x] `set`
+    - [x] `get`
 - [ ] response api like koa

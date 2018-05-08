@@ -3,13 +3,17 @@
 import asyncio
 from socket import socket as sys_socket
 from typing import Any, Callable, cast, Dict, Generator, List, Optional, Union
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, unquote
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
 
 from .cookies import Cookies
-from .utils import decode_bytes, encode_str
+from .utils import (
+    decode_bytes,
+    DEFAULT_REQUEST_CODING,
+    encode_str,
+)
 
 __all__ = [
     "Request",
@@ -53,6 +57,7 @@ class Request(object):
         "_app",
         "_transport",
         "_socket",
+        "_default_charset",
         # "start_time"
     ]
 
@@ -64,6 +69,7 @@ class Request(object):
             Generator[Any, None, None],
         ],
         transport: Optional[asyncio.Transport] = None,
+        charset: str = DEFAULT_REQUEST_CODING,
     ) -> None:
         self._loop = loop
         self._headers: Dict[str, Union[str, List[str]]] = {}
@@ -86,6 +92,22 @@ class Request(object):
         self._schema = "https" if self._ssl else "http"
         self._transport = transport
         self._app: Any = None
+        self._default_charset: str = charset
+
+    @property
+    def default_charset(self) -> str:
+        return self._default_charset
+
+    @default_charset.setter
+    def default_charset(self, charset: str) -> None:
+        self._default_charset = charset
+
+    @property
+    def _get_charset(self) -> str:
+        """
+        获取默认编码
+        """
+        return self.charset or self.default_charset
 
     # ----HttpRequestParser method------
     @property
@@ -132,14 +154,9 @@ class Request(object):
         """
         name_ = decode_bytes(name).casefold()
         val = decode_bytes(value)
-        if name_ == "content-length":
-            # 设置 content-length
-            self._length = int(val)
-        elif name_ == "cookie":
+        if name_ == "cookie":
             # 加载上次的 cookie
             self._cookies.load(val)
-        elif name_ == "host":
-            self._host = val
         if name_ in self._headers:
             # 多个相同的 header
             old: Union[str, List[str]] = self._headers[name_]
@@ -210,7 +227,7 @@ class Request(object):
         """
         path + query 的url
         """
-        return decode_bytes(self._current_url, 'utf8')
+        return decode_bytes(self._current_url, self._get_charset)
 
     @url.setter
     def url(self, url: str) -> None:
@@ -219,7 +236,7 @@ class Request(object):
         """
         if self._URL is not None:
             self._URL = None
-        self._current_url = encode_str(url, 'utf8')
+        self._current_url = encode_str(url, self._get_charset)
 
     @property
     def href(self) -> str:
@@ -228,8 +245,8 @@ class Request(object):
         """
         return "%s://%s%s" % (
             self._schema,
-            self._host,
-            decode_bytes(self._current_url, 'utf8'),
+            self.host,
+            decode_bytes(self._current_url, self._get_charset),
         )
 
     @property
@@ -240,7 +257,7 @@ class Request(object):
         if self._URL is None:
             current_url = b"%s://%s%s" % (
                 encode_str(self._schema),
-                encode_str(self._host),
+                encode_str(self.host),
                 self._current_url
             )
             self._URL = parse_url(current_url)
@@ -251,21 +268,27 @@ class Request(object):
         """
         原始 url
         """
-        return decode_bytes(self._original_url or self._current_url, 'utf8')
+        return decode_bytes(
+            self._original_url or self._current_url,
+            self._get_charset,
+        )
 
     @property
     def origin(self) -> str:
         """
         获取 url 来源，包括 schema 和 host
         """
-        return "%s://%s" % (self._schema, self._host)
+        return "%s://%s" % (self._schema, self.host)
 
     @property
     def length(self) -> Optional[int]:
         """
         获取 body 长度
         """
-        return self._length
+        len_ = self.get("content-length")
+        if len_ is not None:
+            return int(len_)
+        return None
 
     def get(self, name: str) -> Union[None, str, List[str]]:
         """
@@ -296,7 +319,12 @@ class Request(object):
         """
         获取 path
         """
-        path = decode_bytes(self.parse_url.path, 'utf8')
+        path = decode_bytes(
+            self.parse_url.path,
+            self._get_charset,
+        )
+        if "%" in path:
+            path = unquote(path)
         return path
 
     @property
@@ -311,7 +339,10 @@ class Request(object):
         """
         获取 path
         """
-        querystring = decode_bytes(self.parse_url.query, 'utf8')
+        querystring = decode_bytes(
+            self.parse_url.query,
+            self._get_charset,
+        )
         return querystring
 
     @property

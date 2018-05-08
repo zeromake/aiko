@@ -9,7 +9,7 @@ from socket import socket
 from typing import Any, Dict, List, Optional, Union
 
 from .cookies import Cookies
-from .utils import encode_str
+from .utils import DEFAULT_HTTP_VERSION, DEFAULT_RESPONSE_CODING, encode_str
 
 __all__ = [
     "STATUS_CODES",
@@ -110,13 +110,15 @@ class Response(object):
         "_headers_sent",
         "type",
         "_app",
+        "_default_charset",
     ]
 
     def __init__(
         self,
         loop: asyncio.AbstractEventLoop,
         transport: asyncio.Transport,
-        version: str = "1.1",
+        version: str = DEFAULT_HTTP_VERSION,
+        charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
         self._transport = transport
@@ -131,6 +133,7 @@ class Response(object):
         self._body: Union[bytes, str, List[Any], Dict[Any, Any], RawIOBase, None] = None
         # self._body_type: int = BodyType.undefined
         self._charset: Optional[str] = None
+        self._default_charset: str = charset
         self._headers_sent: bool = False
         self._cookies = Cookies()
         self._app: Any = None
@@ -212,7 +215,8 @@ class Response(object):
         """
         raw_body = self._body
         body: Optional[bytes] = None
-        default_type: int = 1
+        default_type: int = 2
+        charset = self._charset or self._default_charset
         if raw_body is None:
             pass
         elif isinstance(raw_body, bytes):
@@ -222,11 +226,11 @@ class Response(object):
         elif isinstance(raw_body, str):
             # body 为字符串
             default_type = 2
-            body = encode_str(raw_body)
+            body = encode_str(raw_body, charset)
         elif isinstance(raw_body, (list, dict)):
             # body 为json
             default_type = 3
-            body = encode_str(json.dumps(raw_body))
+            body = encode_str(json.dumps(raw_body, ensure_ascii=False), charset)
         elif isinstance(raw_body, RawIOBase):
             # body 为文件
             default_type = 1
@@ -243,7 +247,13 @@ class Response(object):
             # 设置默认 Content-Length
             self.set("Content-Length", str(self.length))
         if "Content-Type" not in self._headers.keys():
-            type_str = self.type or DEFAULT_TYPE.get(default_type)
+            type_str = self.type
+            if type_str is None:
+                temp = DEFAULT_TYPE.get(default_type)
+                if temp is not None:
+                    if default_type != 1:
+                        temp += "; charset=%s" % charset
+                    type_str = temp
             if type_str is not None:
                 # 设置默认 Content-Type
                 self.set("Content-Type", type_str)

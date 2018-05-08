@@ -27,6 +27,11 @@ from .context import Context
 from .request import Request
 from .response import Response
 from .server import ServerProtocol
+from .utils import (
+    DEFAULT_REQUEST_CODING,
+    DEFAULT_RESPONSE_CODING,
+    handle_async_gen,
+)
 
 __all__ = [
     "Application",
@@ -73,6 +78,8 @@ class Application(object):
         "_response",
         "_context",
         "_middleware",
+        "requset_charset",
+        "response_charset",
         "proxy",
     ]
 
@@ -83,12 +90,16 @@ class Application(object):
         request: Type[Request] = Request,
         response: Type[Response] = Response,
         context: Type[Context] = Context,
+        requset_charset: str = DEFAULT_REQUEST_CODING,
+        response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop: Optional[asyncio.AbstractEventLoop] = loop
         self._protocol = protocol
         self._request = request
         self._response = response
         self._context = context
+        self.requset_charset = requset_charset
+        self.response_charset = response_charset
         self._middleware: List[middleware_type] = []
         self.proxy = False
 
@@ -123,6 +134,8 @@ class Application(object):
             lambda: self._protocol(
                 loop=loop,
                 handle=self._handle,
+                requset_charset=self.requset_charset,
+                response_charset=self.response_charset,
             ),
             **kwargs,
         ))
@@ -196,24 +209,23 @@ class Application(object):
             body = middleware(ctx, next_call)
         if body is not None:
             if isinstance(body, Generator):
+                gen_obj = body
+                body = None
                 # 处理同步方法使用 yield 来调用异步
-                for gen in body:
-                    if gen is None:
-                        continue
-                    if asyncio.iscoroutine(gen):
-                        try:
-                            gen = yield from gen
-                        except Exception as e:
-                            body.send(e)
-                            continue
-                    if gen is not None:
-                        body = gen
-            elif asyncio.iscoroutine(body):
-                # 处理中间件返回了一个 coroutine 对象需要 await
-                try:
-                    body = yield from body
-                except Exception:
-                    pass
+                while True:
+                    try:
+                        gen = next(gen_obj)
+                        temp = yield from handle_async_gen(gen, gen_obj)
+                    except StopIteration:
+                        break
+                    if temp is not None:
+                        body = temp
+            # elif asyncio.iscoroutine(body):
+            #     # 处理中间件返回了一个 coroutine 对象需要 await
+            #     try:
+            #         body = yield from body
+            #     except Exception:
+            #         pass
             if isinstance(body, tuple):
                 flag = True
                 for item in body:
@@ -227,7 +239,7 @@ class Application(object):
                         # for key, val in item.items():
                         #     ctx.response.set(key, val)
             # 中间件返回的结果如果不为空设置到 body
-            elif body is not None and not isinstance(body, Generator):
+            elif body is not None:
                 ctx.response.body = body
 
     @asyncio.coroutine

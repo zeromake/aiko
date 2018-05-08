@@ -7,6 +7,11 @@ from httptools import HttpRequestParser
 
 from .request import Request
 from .response import Response
+from .utils import (
+    DEFAULT_HTTP_VERSION,
+    DEFAULT_REQUEST_CODING,
+    DEFAULT_RESPONSE_CODING,
+)
 
 __all__ = ["ServerProtocol"]
 
@@ -26,12 +31,16 @@ class ServerProtocol(asyncio.Protocol):
             ],
             Generator[Any, None, None],
         ],
+        requset_charset: str = DEFAULT_REQUEST_CODING,
+        response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
         self._transport: Optional[asyncio.Transport] = None
         self._request: Optional[Request] = None
         self._response: Optional[Response] = None
         self._handle = handle
+        self._requset_charset = requset_charset
+        self._response_charset = response_charset
 
     def connection_made(self, transport: Any) -> None:
         """
@@ -58,6 +67,7 @@ class ServerProtocol(asyncio.Protocol):
                 cast(asyncio.AbstractEventLoop, self._loop),
                 self.complete_handle,
                 cast(asyncio.Transport, self._transport),
+                charset=self._requset_charset,
             )
             self._request.parser = HttpRequestParser(self._request)
         self._request.feed_data(data)
@@ -69,7 +79,12 @@ class ServerProtocol(asyncio.Protocol):
         """
         if self._request is None:
             return
-        self._response = Response(self._loop, cast(asyncio.Transport, self._transport))
+        self._response = Response(
+            self._loop,
+            cast(asyncio.Transport, self._transport),
+            self._request.version or DEFAULT_HTTP_VERSION,
+            self._response_charset,
+        )
         keep_alive = self._request.should_keep_alive
         if not keep_alive:
             self._response.set("Connection", "close")

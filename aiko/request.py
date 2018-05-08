@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+from socket import socket as sys_socket
 from typing import Any, Callable, cast, Dict, Generator, List, Optional, Union
 from urllib.parse import parse_qs
 # from datetime import datetime
@@ -50,6 +51,8 @@ class Request(object):
         "_schema",
         "_ssl",
         "_app",
+        "_transport",
+        "_socket",
         # "start_time"
     ]
 
@@ -60,7 +63,7 @@ class Request(object):
             [],
             Generator[Any, None, None],
         ],
-        ssl: bool = False,
+        transport: Optional[asyncio.Transport] = None,
     ) -> None:
         self._loop = loop
         self._headers: Dict[str, Union[str, List[str]]] = {}
@@ -75,73 +78,16 @@ class Request(object):
         self._cache: Dict[str, Any] = {}
         self._cookies = Cookies()
         self._host = ""
-        self._ssl = ssl
-        self._schema = "https" if ssl else "http"
+        self._ssl = bool(transport is not None and transport.get_extra_info('sslcontext'))
+        self._socket: Optional[sys_socket] = cast(
+            Optional[sys_socket],
+            transport and transport.get_extra_info('socket'),
+        )
+        self._schema = "https" if self._ssl else "http"
+        self._transport = transport
         self._app: Any = None
 
-    @property
-    def app(self) -> Any:
-        return self._app
-
-    @app.setter
-    def app(self, app: Any) -> None:
-        self._app = app
-
-    @property
-    def proxy(self) -> bool:
-        if self.app is None:
-            return False
-        return cast(Any, self.app).proxy
-
-    @property
-    def url(self) -> str:
-        """
-        全部url
-        """
-        return decode_bytes(self._current_url, 'utf8')
-
-    @url.setter
-    def url(self, url: str) -> None:
-        """
-        url 重写
-        """
-        if self._URL is not None:
-            self._URL = None
-        self._current_url = encode_str(url, 'utf8')
-
-    @property
-    def href(self) -> str:
-        return "%s://%s%s" % (
-            self._schema,
-            self._host,
-            decode_bytes(self._current_url, 'utf8'),
-        )
-
-    @property
-    def parse_url(self) -> Any:
-        if self._URL is None:
-            current_url = b"%s://%s%s" % (
-                encode_str(self._schema),
-                encode_str(self._host),
-                self._current_url
-            )
-            self._URL = parse_url(current_url)
-        return self._URL
-
-    @property
-    def original_url(self) -> str:
-        """
-        原始 url
-        """
-        return decode_bytes(self._original_url or self._current_url, 'utf8')
-
-    @property
-    def origin(self) -> str:
-        """
-        获取 url 来源，包括 schema 和 host
-        """
-        return "%s://%s" % (self._schema, self._host)
-
+    # ----HttpRequestParser method------
     @property
     def parser(self) -> Optional[HttpRequestParser]:
         """
@@ -228,6 +174,92 @@ class Request(object):
             self._version = self._parser.get_http_version()
         return self._version
 
+    # 仿 koa api
+    @property
+    def app(self) -> Any:
+        """
+        web app 用与获取配置
+        """
+        return self._app
+
+    @app.setter
+    def app(self, app: Any) -> None:
+        """
+        设置app到
+        """
+        self._app = app
+
+    @property
+    def proxy(self) -> bool:
+        """
+        从 app 读取是否判断 proxy
+        """
+        if self.app is None:
+            return False
+        return bool(cast(Any, self.app).proxy)
+
+    @property
+    def socket(self) -> Optional[sys_socket]:
+        """
+        原生 socket
+        """
+        return self._socket
+
+    @property
+    def url(self) -> str:
+        """
+        path + query 的url
+        """
+        return decode_bytes(self._current_url, 'utf8')
+
+    @url.setter
+    def url(self, url: str) -> None:
+        """
+        url 重写
+        """
+        if self._URL is not None:
+            self._URL = None
+        self._current_url = encode_str(url, 'utf8')
+
+    @property
+    def href(self) -> str:
+        """
+        全量url
+        """
+        return "%s://%s%s" % (
+            self._schema,
+            self._host,
+            decode_bytes(self._current_url, 'utf8'),
+        )
+
+    @property
+    def parse_url(self) -> Any:
+        """
+        获取url解析对象
+        """
+        if self._URL is None:
+            current_url = b"%s://%s%s" % (
+                encode_str(self._schema),
+                encode_str(self._host),
+                self._current_url
+            )
+            self._URL = parse_url(current_url)
+        return self._URL
+
+    @property
+    def original_url(self) -> str:
+        """
+        原始 url
+        """
+        return decode_bytes(self._original_url or self._current_url, 'utf8')
+
+    @property
+    def origin(self) -> str:
+        """
+        获取 url 来源，包括 schema 和 host
+        """
+        return "%s://%s" % (self._schema, self._host)
+
     @property
     def length(self) -> Optional[int]:
         """
@@ -284,18 +316,30 @@ class Request(object):
 
     @property
     def search(self) -> str:
+        """
+        querystring 别名
+        """
         return self.querystring
 
     @property
     def schema(self) -> str:
+        """
+        协议
+        """
         return self._schema
 
     @property
     def secure(self) -> bool:
+        """
+        是否为 ssl
+        """
         return self._ssl
 
     @property
     def charset(self) -> Optional[str]:
+        """
+        获取 charset
+        """
         type_str = cast(str, self.get("Content-Type"))
         if type_str is None or "charset" not in type_str:
             return None
@@ -307,6 +351,9 @@ class Request(object):
 
     @property
     def type(self) -> Optional[str]:
+        """
+        获取 type
+        """
         type_str = cast(Optional[str], self.get("Content-Type"))
         if type_str is not None:
             return type_str.split(";")[0]
@@ -315,22 +362,49 @@ class Request(object):
 
     @property
     def host(self) -> str:
-        host = self.proxy and cast(str, self.get('X-Forwarded-Host'))
+        """
+        获取 host + port, 如果开启 proxy 开关。使用 X-Forwarded-Host 头
+        """
+        host: Optional[str] = None
+        if self.proxy and 'X-Forwarded-Host' in self._headers:
+            xhost = cast(Optional[str], self.get('X-Forwarded-Host'))
+            if xhost is not None:
+                host = xhost.split(",")[0].strip()
         host = host or cast(str, self.get('Host'))
-        if not host:
-            return ""
-        return host.split(",")[0].strip()
+        return host
 
     @property
     def hostname(self) -> str:
+        """
+        去掉端口的域名或ip
+        """
         return self.host.split(":")[0]
 
     @property
-    def ips(self) -> List[str]:
-        val = cast(str, self.get('X-Forwarded-For'))
-        if self.proxy and val:
-            return [i.strip() for i in val.split(",")]
-        return []
+    def ips(self) -> Optional[List[str]]:
+        """
+        获取远端代理ip
+        """
+        if self.proxy and "X-Forwarded-For" in self._headers:
+            val = cast(str, self.get('X-Forwarded-For'))
+            ips = [i.strip() for i in val.split(",")]
+            return ips if len(ips) > 0 else None
+        return None
+
+    @property
+    def ip(self) -> Optional[str]:
+        """
+        获取客户端ip， 开启代理会从 X-Forwarded-For 中获取
+        """
+        ips = self.ips
+        if ips and len(ips) > 0:
+            return ips[0]
+        if self._transport:
+            return cast(
+                str,
+                self._transport.get_extra_info("peername"),
+            )
+        return None
 
     @property
     def cookies(self) -> Cookies:

@@ -51,12 +51,13 @@ class ServerProtocol(asyncio.Protocol):
         """
         socket 收到数据
         """
+        # print(data)
         if self._request is None:
             # future = self._loop.create_future()
             self._request = Request(
                 cast(asyncio.AbstractEventLoop, self._loop),
                 self.complete_handle,
-                bool(cast(asyncio.Transport, self._transport).get_extra_info('sslcontext')),
+                cast(asyncio.Transport, self._transport),
             )
             self._request.parser = HttpRequestParser(self._request)
         self._request.feed_data(data)

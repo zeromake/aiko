@@ -6,6 +6,7 @@ from typing import Any, List, Optional
 
 from .request import Request
 from .response import Response
+from .utils import ProxyAttr
 
 
 __all__ = [
@@ -56,6 +57,27 @@ class Context(object):
         del self._request
         del self._response
         del self._loop
+
+
+ProxyAttr(Context, '_request')\
+    .method('get')\
+    .access('querystring')\
+    .access('search')\
+    .access('method')\
+    .access('query')\
+    .access('path')\
+    .access('url')\
+    .getter('origin')\
+    .getter('href')\
+    .getter('protocol')\
+    .getter('schema')\
+    .getter('host')\
+    .getter('hostname')\
+    .getter('header')\
+    .getter('headers')\
+    .getter('secure')\
+    .getter('ips')\
+    .getter('ip')
 
 
 class ContextCookie(dict):

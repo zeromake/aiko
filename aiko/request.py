@@ -287,7 +287,7 @@ class Request(object):
         """
         len_ = self.get("content-length")
         if len_ is not None:
-            return int(len_)
+            return int(cast(str, len_))
         return None
 
     def get(self, name: str) -> Union[None, str, List[str]]:
@@ -357,6 +357,10 @@ class Request(object):
         """
         协议
         """
+        return self._schema
+
+    @property
+    def protocol(self) -> str:
         return self._schema
 
     @property

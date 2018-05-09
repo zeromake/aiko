@@ -1,4 +1,4 @@
-.PHONY: release build
+.PHONY: release build tox test cov
 
 release: build
 	twine upload dist/*
@@ -9,6 +9,11 @@ build:
 	python setup.py bdist_wheel
 	python setup.py bdist_egg
 
-test:
+tox:
 	tox
-	pytest
+
+test: tox
+	pytest -s -v --cov-report term --cov=aiko tests
+
+cov:
+	pytest -s -v --cov-report term --cov-report html --cov aiko tests

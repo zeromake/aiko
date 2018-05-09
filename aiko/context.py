@@ -59,10 +59,20 @@ class Context(object):
         del self._loop
 
 
+ProxyAttr(Context, '_response')\
+    .method('set')\
+    .method('flush_headers')\
+    .access('status')\
+    .access('message')\
+    .access('body')\
+    .access('length')\
+    .access('type')\
+    .getter('header_sent')
+
 ProxyAttr(Context, '_request')\
     .method('get')\
     .access('querystring')\
-    .access('search')\
+    .access('querystring', 'search')\
     .access('method')\
     .access('query')\
     .access('path')\
@@ -70,13 +80,14 @@ ProxyAttr(Context, '_request')\
     .getter('origin')\
     .getter('href')\
     .getter('protocol')\
-    .getter('schema')\
+    .getter('protocol', 'schema')\
     .getter('host')\
     .getter('hostname')\
-    .getter('header')\
     .getter('headers')\
+    .getter('headers', 'header')\
     .getter('secure')\
     .getter('ips')\
+    .getter('socket')\
     .getter('ip')
 
 

@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - 3.6
+  - 3.5
+
+install:
+  - pip install pipenv -i https://mirrors.aliyun.com/pypi/simple/ 
+  - pipenv install -d
+
+script:
+  - make test
+
+after_success:
+  - codecov

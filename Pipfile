@@ -19,6 +19,9 @@ yapf = "*"
 sphinx-rtd-theme = "*"
 twine = "*"
 aiohttp = "*"
+pytest-cov = "*"
+pytest-sugar = "*"
+codecov = "*"
 
 [requires]
 python_version = "3.6"

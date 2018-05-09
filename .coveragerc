@@ -1,0 +1,4 @@
+[run]
+branch = True
+source = aiko, tests
+omit = site-packages, .tox

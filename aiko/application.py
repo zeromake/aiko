@@ -257,6 +257,11 @@ class Application(object):
         )
         request.app = self
         response.app = self
+        request.ctx = ctx
+        response.ctx = ctx
+        request.response = response
+        response.request = request
+
         # 把当前注册的中间件转为迭代器
         middleware_iter = iter(self._middleware)
         # 通过迭代器的模式生成一个执行下一个中间的调用方法

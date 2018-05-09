@@ -48,26 +48,45 @@ Todo
 ----
 
 - [ ] request api like koa
-    - [ ] `url`
-    - [ ] `path`
-    - [ ] `query`
-    - [ ] `querystring`
-    - [ ] `search`
-    - [ ] `originalUrl` -> `original_url`
-    - [ ] `href`
-    - [x] `origin`
-    - [x] `protocol`
-    - [x] `host`
-    - [x] `hostname`
-    - [x] `ips`
-    - [x] `ip`
-    - [x] `proxy`
-    - [x] `secure`
-    - [x] `charset`
-    - [x] `type`
-    - [x] `header`
-    - [x] `headers`
-    - [x] `socket`
-    - [x] `set`
-    - [x] `get`
+    - [ ] method
+        - [ ] `accepts`
+        - [ ] `acceptsEncodings` -> `accepts_encodings`
+        - [ ] `acceptsCharsets` -> `accepts_charsets`
+        - [ ] `acceptsLanguages` -> `accepts_languages`
+        - [ ] `is`
+        - [x] `get`
+    - [ ] getter, setter
+        - [x] `header`
+            - [x] getter
+            - [ ] setter
+        - [x] `headers`
+            - [x] getter
+            - [ ] setter
+        - [x] `url`
+        - [x] `origin`
+        - [x] `href`
+        - [x] `method`
+        - [x] `path`
+        - [x] `query`
+        - [x] `querystring`
+        - [x] `search`
+    - [ ] getter
+        - [x] `host`
+        - [x] `hostname`
+        - [ ] `URL`
+        - [x] `fresh`
+        - [x] `stale`
+        - [x] `idempotent`
+        - [x] `socket`
+        - [x] `charset`
+        - [x] `length`
+        - [x] `protocol`
+        - [x] `secure`
+        - [x] `ips`
+        - [ ] `subdomains`
+        - [x] `type`
+        - [x] `originalUrl` -> `original_url`
+        - [x] `ip`
 - [ ] response api like koa
+- [x] proxy class property attr and method
+- [x] like `fresh <https://github.com/jshttp/fresh>`_ method

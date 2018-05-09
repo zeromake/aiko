@@ -9,7 +9,12 @@ from socket import socket
 from typing import Any, Dict, List, Optional, Union
 
 from .cookies import Cookies
-from .utils import DEFAULT_HTTP_VERSION, DEFAULT_RESPONSE_CODING, encode_str
+from .utils import (
+    DEFAULT_HTTP_VERSION,
+    DEFAULT_RESPONSE_CODING,
+    encode_str,
+    HEADER_TYPE,
+)
 
 __all__ = [
     "STATUS_CODES",
@@ -111,6 +116,8 @@ class Response(object):
         "type",
         "_app",
         "_default_charset",
+        "request",
+        "ctx",
     ]
 
     def __init__(
@@ -125,7 +132,7 @@ class Response(object):
         self._version = version
         self._socket: socket = transport.get_extra_info("socket")
         self._fileno = self._socket.fileno()
-        self._headers: Dict[str, Union[str, List[str]]] = {}
+        self._headers: HEADER_TYPE = {}
         self._status = 200
         self._message = b"OK"
         self.length: Optional[int] = None
@@ -137,6 +144,8 @@ class Response(object):
         self._headers_sent: bool = False
         self._cookies = Cookies()
         self._app: Any = None
+        self.request: Any = None
+        self.ctx: Any = None
 
     @property
     def app(self) -> Any:
@@ -150,9 +159,9 @@ class Response(object):
     def headers_sent(self) -> bool:
         return self._headers_sent
 
-    @headers_sent.setter
-    def headers_sent(self, sent: bool) -> None:
-        self._headers_sent = sent
+    # @headers_sent.setter
+    # def headers_sent(self, sent: bool) -> None:
+    #     self._headers_sent = sent
 
     @property
     def status(self) -> int:
@@ -194,11 +203,11 @@ class Response(object):
         self._headers[name] = value
 
     @property
-    def header(self) -> Dict[str, Union[str, List[str]]]:
+    def header(self) -> HEADER_TYPE:
         return self._headers
 
     @property
-    def headers(self) -> Dict[str, Union[str, List[str]]]:
+    def headers(self) -> HEADER_TYPE:
         return self._headers
 
     @property

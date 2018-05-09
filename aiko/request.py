@@ -3,7 +3,7 @@
 import asyncio
 from socket import socket as sys_socket
 from typing import Any, Callable, cast, Dict, Generator, List, Optional, Union
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlencode
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
@@ -13,6 +13,9 @@ from .utils import (
     decode_bytes,
     DEFAULT_REQUEST_CODING,
     encode_str,
+    fresh,
+    HEADER_TYPE,
+    STATIC_METHODS,
 )
 
 __all__ = [
@@ -34,6 +37,66 @@ class RequestParameters(dict):
         return super().get(name, default)
 
 
+class RequestUrl(object):
+    def __init__(self, href: bytes, coding: str = "utf-8") -> None:
+        url = parse_url(href)
+        self.coding = coding
+        self.schema: str = decode_bytes(url.schema, coding)
+        self.host: str = decode_bytes(url.host, coding)
+        self.port: Optional[int] = url.port
+        self.path: Optional[str] = self.decode_bytes(url.path)
+        self.querystring: Optional[str] = self.decode_bytes(url.query)
+        self.fragment: Optional[str] = self.decode_bytes(url.fragment)
+        self.userinfo: Optional[str] = self.decode_bytes(url.userinfo)
+
+    def decode_bytes(self, data: Optional[bytes]) -> Optional[str]:
+        return cast(None, data) and decode_bytes(data, self.coding)
+
+    @property
+    def query(self) -> Optional[RequestParameters]:
+        if self.querystring is not None:
+            return RequestParameters(parse_qs(self.querystring))
+        return None
+
+    @query.setter
+    def query(self, query_obj: Dict[str, str]) -> None:
+        self.querystring = urlencode(query_obj)
+
+    @property
+    def raw_query(self) -> Optional[Dict[str, str]]:
+        query_obj = self.query
+        if query_obj is not None:
+            return {
+                k: v[0] for k, v in query_obj.items() if v is not None and len(v) > 1
+            }
+        return None
+
+    @property
+    def href(self) -> str:
+        """
+        把 url 从新构建
+        """
+        href_arr: List[str] = []
+        href_arr.append(self.schema)
+        href_arr.append("://")
+        if self.userinfo is not None:
+            href_arr.append(self.userinfo)
+            href_arr.append("@")
+        href_arr.append(self.host)
+        if self.port is not None:
+            href_arr.append(":%d" % self.port)
+        if self.path is not None:
+            href_arr.append(self.path)
+        if self.querystring is not None:
+            href_arr.append("?")
+            href_arr.append(self.querystring)
+        if self.fragment is not None:
+            href_arr.append("#")
+            href_arr.append(self.fragment)
+        href_str = "".join(href_arr)
+        return href_str
+
+
 class Request(object):
     """
     请求
@@ -48,8 +111,6 @@ class Request(object):
         "_version",
         "_length",
         "_URL",
-        "_original_url",
-        "_cache",
         "_cookies",
         "_host",
         "_schema",
@@ -58,6 +119,8 @@ class Request(object):
         "_transport",
         "_socket",
         "_default_charset",
+        "response",
+        "ctx",
         # "start_time"
     ]
 
@@ -72,16 +135,14 @@ class Request(object):
         charset: str = DEFAULT_REQUEST_CODING,
     ) -> None:
         self._loop = loop
-        self._headers: Dict[str, Union[str, List[str]]] = {}
+        self._headers: HEADER_TYPE = {}
         self._current_url: bytes = b""
         self._handle = handle
         self._parser: HttpRequestParser = cast(HttpRequestParser, None)
         self._method: Optional[str] = None
         self._version: Optional[str] = None
         self._length: Optional[int] = None
-        self._URL: Any = None
-        self._original_url: Optional[bytes] = None
-        self._cache: Dict[str, Any] = {}
+        self._URL: Optional[RequestUrl] = None
         self._cookies = Cookies()
         self._host = ""
         self._ssl = bool(transport is not None and transport.get_extra_info('sslcontext'))
@@ -93,6 +154,8 @@ class Request(object):
         self._transport = transport
         self._app: Any = None
         self._default_charset: str = charset
+        self.response: Any = None
+        self.ctx: Any = None
 
     @property
     def default_charset(self) -> str:
@@ -146,7 +209,6 @@ class Request(object):
         httptools url callback
         """
         self._current_url = url
-        self._original_url = url
 
     def on_header(self, name: bytes, value: bytes) -> None:
         """
@@ -181,6 +243,13 @@ class Request(object):
         if self._method is None:
             self._method = decode_bytes(self._parser.get_method())
         return self._method
+
+    @method.setter
+    def method(self, val: str) -> None:
+        """
+        重写请求方法
+        """
+        self._method = val
 
     @property
     def version(self) -> Optional[str]:
@@ -223,64 +292,6 @@ class Request(object):
         return self._socket
 
     @property
-    def url(self) -> str:
-        """
-        path + query 的url
-        """
-        return decode_bytes(self._current_url, self._get_charset)
-
-    @url.setter
-    def url(self, url: str) -> None:
-        """
-        url 重写
-        """
-        if self._URL is not None:
-            self._URL = None
-        self._current_url = encode_str(url, self._get_charset)
-
-    @property
-    def href(self) -> str:
-        """
-        全量url
-        """
-        return "%s://%s%s" % (
-            self._schema,
-            self.host,
-            decode_bytes(self._current_url, self._get_charset),
-        )
-
-    @property
-    def parse_url(self) -> Any:
-        """
-        获取url解析对象
-        """
-        if self._URL is None:
-            current_url = b"%s://%s%s" % (
-                encode_str(self._schema),
-                encode_str(self.host),
-                self._current_url
-            )
-            self._URL = parse_url(current_url)
-        return self._URL
-
-    @property
-    def original_url(self) -> str:
-        """
-        原始 url
-        """
-        return decode_bytes(
-            self._original_url or self._current_url,
-            self._get_charset,
-        )
-
-    @property
-    def origin(self) -> str:
-        """
-        获取 url 来源，包括 schema 和 host
-        """
-        return "%s://%s" % (self._schema, self.host)
-
-    @property
     def length(self) -> Optional[int]:
         """
         获取 body 长度
@@ -315,53 +326,132 @@ class Request(object):
         self._headers[name] = value
 
     @property
-    def path(self) -> str:
+    def url(self) -> str:
+        """
+        path + query 的url
+        """
+        url_str = self.parse_url.path or ""
+        if self.parse_url.querystring is not None:
+            url_str += "?" + self.parse_url.querystring
+        return url_str
+
+    @url.setter
+    def url(self, url_str: str) -> None:
+        """
+        url 重写
+        """
+        if "?" in url_str:
+            url_arr = url_str.split("?")
+            self.parse_url.path = url_arr[0]
+            self.parse_url.querystring = url_arr[1]
+
+    @property
+    def path(self) -> Optional[str]:
         """
         获取 path
         """
-        path = decode_bytes(
-            self.parse_url.path,
-            self._get_charset,
-        )
-        if "%" in path:
-            path = unquote(path)
-        return path
+        path_str: Optional[str] = self.parse_url.path
+        if path_str is not None and "%" in path_str:
+            path_str = unquote(path_str)
+        return path_str
+
+    @path.setter
+    def path(self, path_str: str) -> None:
+        """
+        重写 path
+        """
+        self.parse_url.path = path_str
 
     @property
-    def query(self) -> Dict[str, List[str]]:
+    def query(self) -> Optional[RequestParameters]:
         """
         获取query字典对象
         """
-        return RequestParameters(parse_qs(self.querystring))
+        return self.parse_url.query
+
+    @query.setter
+    def query(self, query_dict: Dict[str, Any]) -> None:
+        """
+        重写 query
+        """
+        self.parse_url.query = cast(Any, query_dict)
 
     @property
-    def querystring(self) -> str:
+    def querystring(self) -> Optional[str]:
         """
-        获取 path
+        获取 query string
         """
-        querystring = decode_bytes(
-            self.parse_url.query,
-            self._get_charset,
-        )
-        return querystring
+        return self.parse_url.querystring
+
+    @querystring.setter
+    def querystring(self, query_str: str) -> None:
+        """
+        重写 query string
+        """
+        self.parse_url.querystring = query_str
 
     @property
-    def search(self) -> str:
+    def search(self) -> Optional[str]:
         """
         querystring 别名
         """
         return self.querystring
+
+    @search.setter
+    def search(self, query_str: str) -> None:
+        """
+        重写 querystring
+        """
+        self.parse_url.querystring = query_str
+
+    @property
+    def origin(self) -> str:
+        """
+        获取 url 来源，包括 schema 和 host
+        """
+        return "%s://%s" % (self.parse_url.schema, self.parse_url.host)
+
+    @property
+    def href(self) -> str:
+        """
+        全量url
+        """
+        return self.parse_url.href
+
+    @property
+    def parse_url(self) -> RequestUrl:
+        """
+        获取url解析对象
+        """
+        if self._URL is None:
+            current_url = b"%s://%s%s" % (
+                encode_str(self._schema),
+                encode_str(self.host),
+                self._current_url
+            )
+            self._URL = RequestUrl(current_url)
+        return cast(RequestUrl, self._URL)
+
+    @property
+    def original_url(self) -> str:
+        """
+        原始 url
+        """
+        return decode_bytes(
+            self._current_url,
+            self._get_charset,
+        )
 
     @property
     def schema(self) -> str:
         """
         协议
         """
-        return self._schema
+        return self.parse_url.schema
 
     @property
     def protocol(self) -> str:
-        return self._schema
+        return self.schema
 
     @property
     def secure(self) -> bool:
@@ -449,15 +539,36 @@ class Request(object):
         return self._cookies
 
     @property
-    def headers(self) -> Dict[str, Union[str, List[str]]]:
+    def headers(self) -> HEADER_TYPE:
         """
         在 on_headers_complete 回调后可以获得这次请求的 headers
         """
         return self._headers
 
     @property
-    def header(self) -> Dict[str, Union[str, List[str]]]:
+    def header(self) -> HEADER_TYPE:
         """
         headers 的别名
         """
         return self._headers
+
+    @property
+    def fresh(self) -> bool:
+        method_str = self.method
+        if 'GET' != method_str and 'HEAD' != method_str:
+            return False
+        s: int = self.ctx.status
+        if (s >= 200 and s < 300) or 304 == s:
+            return fresh(
+                self.headers,
+                (self.response and self.response.headers) or {},
+            )
+        return False
+
+    @property
+    def stale(self) -> bool:
+        return not self.fresh
+
+    @property
+    def idempotent(self) -> bool:
+        return bool(~(STATIC_METHODS.index(self.method)))

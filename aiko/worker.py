@@ -4,7 +4,7 @@ import asyncio
 import os
 from asyncio.base_events import Server as AIOServer
 from ssl import SSLContext
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, cast, Dict, Generator, List, Optional, Tuple
 
 from gunicorn.workers.base import Worker
 
@@ -12,8 +12,8 @@ from gunicorn.workers.base import Worker
 class GunicornWorker(Worker):
     def __init__(self, *args: Tuple[Any], **kwargs: Dict[str, Any]) -> None:
         super().__init__(*args, **kwargs)
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
-        self.servers: List[AIOServer] = []
+        self.loop = cast(Optional[asyncio.AbstractEventLoop], None)
+        self.servers = cast(List[AIOServer], [])
         self.alive = True
 
     def init_process(self) -> None:
@@ -37,7 +37,8 @@ class GunicornWorker(Worker):
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             self.loop.close()
 
-    async def _check_alive(self) -> None:
+    @asyncio.coroutine
+    def _check_alive(self) -> Generator[Any, None, None]:
         if self.loop is None:
             return
         pid = os.getpid()
@@ -49,18 +50,19 @@ class GunicornWorker(Worker):
                     self.alive = False
                     self.log.info("Parent changed, shutting down: %s", self)
                 else:
-                    await asyncio.sleep(1.0, loop=self.loop)
+                    yield from asyncio.sleep(1.0, loop=self.loop)
         except (Exception, BaseException, GeneratorExit, KeyboardInterrupt):
             pass
-        await self.close()
+        yield from self.close()
 
-    async def _run(self) -> None:
+    @asyncio.coroutine
+    def _run(self) -> Generator[Any, None, None]:
         ssl_context = self._create_ssl_context()
         # access_logger = self.log.access_log if self.cfg.accesslog else None
         for sock in self.sockets:
             # max_fields_size = self.cfg.limit_request_fields * self.cfg.limit_request_field_size
             # h11_max_incomplete_size = self.cfg.limit_request_line + max_fields_size
-            server = await self.wsgi.create_server(self.loop, sock=sock.sock, ssl=ssl_context)
+            server = yield from self.wsgi.create_server(self.loop, sock=sock.sock, ssl=ssl_context)
             self.servers.append(server)
 
     def _create_ssl_context(self) -> Optional[SSLContext]:
@@ -75,10 +77,11 @@ class GunicornWorker(Worker):
             ssl_context.set_alpn_protocols(['http/1.1'])
         return ssl_context
 
-    async def close(self) -> None:
+    @asyncio.coroutine
+    def close(self) -> Generator[Any, None, None]:
         for server in self.servers:
             server.close()
-            await server.wait_closed()
+            yield from server.wait_closed()
 
 
 class GunicornUVLoopWorker(GunicornWorker):

@@ -93,14 +93,14 @@ class Application(object):
         requset_charset: str = DEFAULT_REQUEST_CODING,
         response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
-        self._loop: Optional[asyncio.AbstractEventLoop] = loop
+        self._loop = loop
         self._protocol = protocol
         self._request = request
         self._response = response
         self._context = context
         self.requset_charset = requset_charset
         self.response_charset = response_charset
-        self._middleware: List[middleware_type] = []
+        self._middleware = cast(List[middleware_type], [])
         self.proxy = False
 
     @property
@@ -203,7 +203,7 @@ class Application(object):
             return
         # next_call = self._next_middleware(middlewares, ctx)
         if asyncio.iscoroutinefunction(middleware):
-            temp: Any = middleware(ctx, next_call)
+            temp = cast(Any, middleware(ctx, next_call))
             body = yield from temp
         else:
             body = middleware(ctx, next_call)

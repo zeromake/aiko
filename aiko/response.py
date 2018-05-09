@@ -6,7 +6,7 @@ import os
 from enum import Enum
 from io import RawIOBase
 from socket import socket
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, Union
 
 from .cookies import Cookies
 from .utils import (
@@ -83,11 +83,14 @@ STATUS_CODES = {
     511: b'Network Authentication Required',
 }
 
-DEFAULT_TYPE: Dict[int, str] = {
-    1: "application/octet-stream",
-    2: "text/plain",
-    3: "application/json",
-}
+DEFAULT_TYPE = cast(
+    Dict[int, str],
+    {
+        1: "application/octet-stream",
+        2: "text/plain",
+        3: "application/json",
+    },
+)
 
 
 class BodyType(Enum):
@@ -130,22 +133,35 @@ class Response(object):
         self._loop = loop
         self._transport = transport
         self._version = version
-        self._socket: socket = transport.get_extra_info("socket")
+        self._socket = cast(
+            socket,
+            transport.get_extra_info("socket"),
+        )
         self._fileno = self._socket.fileno()
-        self._headers: HEADER_TYPE = {}
+        self._headers = cast(HEADER_TYPE, {})
         self._status = 200
         self._message = b"OK"
-        self.length: Optional[int] = None
-        self.type: Optional[str] = None
-        self._body: Union[bytes, str, List[Any], Dict[Any, Any], RawIOBase, None] = None
+        self.length = cast(Optional[int], None)
+        self.type = cast(Optional[str], None)
+        self._body = cast(
+            Union[
+                bytes,
+                str,
+                List[Any],
+                Dict[Any, Any],
+                RawIOBase,
+                None,
+            ],
+            None,
+        )
         # self._body_type: int = BodyType.undefined
-        self._charset: Optional[str] = None
-        self._default_charset: str = charset
-        self._headers_sent: bool = False
+        self._charset = cast(Optional[str], None)
+        self._default_charset = charset
+        self._headers_sent = False
         self._cookies = Cookies()
-        self._app: Any = None
-        self.request: Any = None
-        self.ctx: Any = None
+        self._app = cast(Any, None)
+        self.request = cast(Any, None)
+        self.ctx = cast(Any, None)
 
     @property
     def app(self) -> Any:
@@ -223,8 +239,8 @@ class Response(object):
         处理设置到body上的数据默认 headers
         """
         raw_body = self._body
-        body: Optional[bytes] = None
-        default_type: int = 2
+        body = cast(Optional[bytes], None)
+        default_type = 2
         charset = self._charset or self._default_charset
         if raw_body is None:
             pass
@@ -285,7 +301,7 @@ class Response(object):
             sync,
         )
         for name, value in self._headers.items():
-            name_byte: bytes = encode_str(name)
+            name_byte = encode_str(name)
             if isinstance(value, list):
                 for val in value:
                     self.write(

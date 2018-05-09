@@ -41,13 +41,13 @@ class RequestUrl(object):
     def __init__(self, href: bytes, coding: str = "utf-8") -> None:
         url = parse_url(href)
         self.coding = coding
-        self.schema: str = decode_bytes(url.schema, coding)
-        self.host: str = decode_bytes(url.host, coding)
-        self.port: Optional[int] = url.port
-        self.path: Optional[str] = self.decode_bytes(url.path)
-        self.querystring: Optional[str] = self.decode_bytes(url.query)
-        self.fragment: Optional[str] = self.decode_bytes(url.fragment)
-        self.userinfo: Optional[str] = self.decode_bytes(url.userinfo)
+        self.schema = decode_bytes(url.schema, coding)
+        self.host = decode_bytes(url.host, coding)
+        self.port = cast(Optional[int], url.port)
+        self.path = cast(Optional[str], self.decode_bytes(url.path))
+        self.querystring = cast(Optional[str], self.decode_bytes(url.query))
+        self.fragment = cast(Optional[str], self.decode_bytes(url.fragment))
+        self.userinfo = cast(Optional[str], self.decode_bytes(url.userinfo))
 
     def decode_bytes(self, data: Optional[bytes]) -> Optional[str]:
         return cast(None, data) and decode_bytes(data, self.coding)
@@ -76,7 +76,7 @@ class RequestUrl(object):
         """
         把 url 从新构建
         """
-        href_arr: List[str] = []
+        href_arr = cast(List[str], [])
         href_arr.append(self.schema)
         href_arr.append("://")
         if self.userinfo is not None:
@@ -135,27 +135,27 @@ class Request(object):
         charset: str = DEFAULT_REQUEST_CODING,
     ) -> None:
         self._loop = loop
-        self._headers: HEADER_TYPE = {}
-        self._current_url: bytes = b""
+        self._headers = cast(HEADER_TYPE, {})
+        self._current_url = b""
         self._handle = handle
-        self._parser: HttpRequestParser = cast(HttpRequestParser, None)
-        self._method: Optional[str] = None
-        self._version: Optional[str] = None
-        self._length: Optional[int] = None
-        self._URL: Optional[RequestUrl] = None
+        self._parser = cast(HttpRequestParser, None)
+        self._method = cast(Optional[str], None)
+        self._version = cast(Optional[str], None)
+        self._length = cast(Optional[int], None)
+        self._URL = cast(Optional[RequestUrl], None)
         self._cookies = Cookies()
         self._host = ""
         self._ssl = bool(transport is not None and transport.get_extra_info('sslcontext'))
-        self._socket: Optional[sys_socket] = cast(
+        self._socket = cast(
             Optional[sys_socket],
             transport and transport.get_extra_info('socket'),
         )
         self._schema = "https" if self._ssl else "http"
         self._transport = transport
-        self._app: Any = None
-        self._default_charset: str = charset
-        self.response: Any = None
-        self.ctx: Any = None
+        self._app = cast(Any, None)
+        self._default_charset = charset
+        self.response = cast(Any, None)
+        self.ctx = cast(Any, None)
 
     @property
     def default_charset(self) -> str:
@@ -221,7 +221,7 @@ class Request(object):
             self._cookies.load(val)
         if name_ in self._headers:
             # 多个相同的 header
-            old: Union[str, List[str]] = self._headers[name_]
+            old = self._headers[name_]
             if isinstance(old, list):
                 old.append(val)
             else:
@@ -350,7 +350,7 @@ class Request(object):
         """
         获取 path
         """
-        path_str: Optional[str] = self.parse_url.path
+        path_str = self.parse_url.path
         if path_str is not None and "%" in path_str:
             path_str = unquote(path_str)
         return path_str
@@ -490,7 +490,7 @@ class Request(object):
         """
         获取 host + port, 如果开启 proxy 开关。使用 X-Forwarded-Host 头
         """
-        host: Optional[str] = None
+        host = cast(Optional[str], None)
         if self.proxy and 'X-Forwarded-Host' in self._headers:
             xhost = cast(Optional[str], self.get('X-Forwarded-Host'))
             if xhost is not None:
@@ -557,7 +557,7 @@ class Request(object):
         method_str = self.method
         if 'GET' != method_str and 'HEAD' != method_str:
             return False
-        s: int = self.ctx.status
+        s = self.ctx.status
         if (s >= 200 and s < 300) or 304 == s:
             return fresh(
                 self.headers,

@@ -1,5 +1,5 @@
 from http.cookies import BaseCookie
-from typing import Any, List, Optional
+from typing import Any, cast, List, Optional
 
 
 class Cookies(BaseCookie):
@@ -61,7 +61,7 @@ class Cookies(BaseCookie):
         """
         if len(self) == 0:
             return None
-        headers: List[str] = []
+        headers = cast(List[str], [])
         for cookie in self.values():
             headers.append(cookie.OutputString())
         return headers

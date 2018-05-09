@@ -35,9 +35,9 @@ class ServerProtocol(asyncio.Protocol):
         response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
-        self._transport: Optional[asyncio.Transport] = None
-        self._request: Optional[Request] = None
-        self._response: Optional[Response] = None
+        self._transport = cast(Optional[asyncio.Transport], None)
+        self._request = cast(Optional[Request], None)
+        self._response = cast(Optional[Response], None)
         self._handle = handle
         self._requset_charset = requset_charset
         self._response_charset = response_charset

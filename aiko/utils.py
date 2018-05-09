@@ -141,10 +141,10 @@ class ProxyAttr(object):
     def __init__(self, proto: Any, target: str) -> None:
         self._proto = proto
         self._target = target
-        self._method: Dict[str, Set[str]] = {}
-        self._getter: Dict[str, Set[str]] = {}
-        self._setter: Dict[str, Set[str]] = {}
-        self._func_map: Dict[str, Any] = {}
+        self._method = cast(Dict[str, Set[str]], {})
+        self._getter = cast(Dict[str, Set[str]], {})
+        self._setter = cast(Dict[str, Set[str]], {})
+        self._func_map = cast(Dict[str, Any], {})
 
     @property
     def method_map(self) -> Dict[str, Set[str]]:

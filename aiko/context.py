@@ -26,7 +26,7 @@ class Context(object):
         self._request = request
         self._response = response
         self._cookies = ContextCookie(self)
-        self._app: Any = app
+        self._app = app
 
     @property
     def app(self) -> Any:

@@ -50,7 +50,9 @@ class RequestUrl(object):
         self.userinfo = cast(Optional[str], self.decode_bytes(url.userinfo))
 
     def decode_bytes(self, data: Optional[bytes]) -> Optional[str]:
-        return cast(None, data) and decode_bytes(data, self.coding)
+        if data is not None:
+            return decode_bytes(data, self.coding)
+        return None
 
     @property
     def query(self) -> Optional[RequestParameters]:

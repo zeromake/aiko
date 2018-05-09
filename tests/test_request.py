@@ -28,7 +28,7 @@ class TestRequest(BaseTest):
                 assert self.request.original_url == url
                 assert self.request.get("Host") == host
                 assert self.request.querystring == query_string
-                assert self.request.query["test"][0] == query["test"]
+                assert cast(Any, self.request.query)["test"][0] == query["test"]
                 assert self.request.querystring == self.request.search
                 assert self.request.host == host
                 assert self.request.hostname == host.split(":")[0]

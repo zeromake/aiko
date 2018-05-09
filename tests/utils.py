@@ -51,8 +51,8 @@ class AppTest(BaseTest):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.server: Optional[Server] = None
-        self.app: Optional[App] = None
+        self.server = cast(Optional[Server], None)
+        self.app = cast(Optional[App], None)
 
     def setUp(self) -> None:
         super().setUp()

@@ -5,6 +5,10 @@ aiko
     :target: https://www.travis-ci.org/zeromake/aiko
     :alt: travis
 
+.. image:: https://ci.appveyor.com/api/projects/status/d0278sgcp77uuqo6?svg=true
+    :target: https://ci.appveyor.com/project/zeromake/aiko
+    :alt: appveyor
+
 .. image:: https://codecov.io/gh/zeromake/aiko/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/zeromake/aiko
     :alt: codecov

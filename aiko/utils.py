@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+各种工具
+"""
 import asyncio
 from datetime import datetime
 from typing import Any, cast, Dict, List, Optional, Set, Union
@@ -45,15 +48,15 @@ def handle_async_gen(gen: Any, gen_obj: Any) -> Any:
     处理异步生成器
     """
     if gen is None:
-        return
+        return None
     if asyncio.iscoroutine(gen):
         try:
             temp = yield from gen
             gen_obj.send(temp)
             return
-        except Exception as e:
+        except Exception as error:
             try:
-                gen = gen_obj.throw(e)
+                gen = gen_obj.throw(error)
                 return (yield from handle_async_gen(gen, gen_obj))
             except StopIteration:
                 return None
@@ -148,21 +151,30 @@ class ProxyAttr(object):
 
     @property
     def method_map(self) -> Dict[str, Set[str]]:
+        """
+        代理的method map
+        """
         return self._method
 
     @property
     def getter_map(self) -> Dict[str, Set[str]]:
+        """
+        代理的getter map
+        """
         return self._getter
 
     @property
     def setter_map(self) -> Dict[str, Set[str]]:
+        """
+        代理的setter map
+        """
         return self._setter
 
     def reuse_handle(
-        self,
-        name: str,
-        rename: str,
-        pmap: Dict[str, Set[str]],
+            self,
+            name: str,
+            rename: str,
+            pmap: Dict[str, Set[str]],
     ) -> bool:
         """
         判断是否复用之前的
@@ -186,6 +198,9 @@ class ProxyAttr(object):
             return self
 
         def proxy_method(self2: Any, *args: Any, **kwargs: Any) -> Any:
+            """
+            代理 method
+            """
             return getattr(getattr(self2, self._target), name)(*args, **kwargs)
         self._func_map[name] = proxy_method
         setattr(self._proto, name, proxy_method)

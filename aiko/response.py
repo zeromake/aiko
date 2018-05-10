@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+响应
+"""
 
 import asyncio
 import json
 import os
-from enum import Enum
 from io import RawIOBase
 from socket import socket
 from typing import Any, cast, Dict, List, Optional, Union
@@ -89,19 +91,15 @@ DEFAULT_TYPE = cast(
         1: "application/octet-stream",
         2: "text/plain",
         3: "application/json",
+        4: "text/html",
     },
 )
 
 
-class BodyType(Enum):
-    undefined = 0
-    string = 1
-    json = 2
-    byte = 3
-    stream = 4
-
-
 class Response(object):
+    """
+    响应类
+    """
     __slots__ = [
         "_loop",
         "_transport",
@@ -124,11 +122,11 @@ class Response(object):
     ]
 
     def __init__(
-        self,
-        loop: asyncio.AbstractEventLoop,
-        transport: asyncio.Transport,
-        version: str = DEFAULT_HTTP_VERSION,
-        charset: str = DEFAULT_RESPONSE_CODING,
+            self,
+            loop: asyncio.AbstractEventLoop,
+            transport: asyncio.Transport,
+            version: str = DEFAULT_HTTP_VERSION,
+            charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
         self._transport = transport
@@ -165,14 +163,23 @@ class Response(object):
 
     @property
     def app(self) -> Any:
+        """
+        应用实例
+        """
         return self._app
 
     @app.setter
     def app(self, app: Any) -> None:
+        """
+        设置应用实例
+        """
         self._app = app
 
     @property
     def headers_sent(self) -> bool:
+        """
+        headers 是否发送
+        """
         return self._headers_sent
 
     # @headers_sent.setter
@@ -181,10 +188,16 @@ class Response(object):
 
     @property
     def status(self) -> int:
+        """
+        获取响应状态
+        """
         return self._status
 
     @status.setter
     def status(self, status: int) -> None:
+        """
+        设置响应状态
+        """
         self._status = status
         self._message = STATUS_CODES[status]
 
@@ -209,8 +222,7 @@ class Response(object):
         """
         if name in self._headers:
             return self._headers[name]
-        else:
-            return None
+        return None
 
     def set(self, name: str, value: Union[str, List[str]]) -> None:
         """
@@ -220,18 +232,30 @@ class Response(object):
 
     @property
     def header(self) -> HEADER_TYPE:
+        """
+        获取 headers
+        """
         return self._headers
 
     @property
     def headers(self) -> HEADER_TYPE:
+        """
+        获取 headers
+        """
         return self._headers
 
     @property
     def body(self) -> Union[bytes, str, List[Any], Dict[Any, Any], RawIOBase, None]:
+        """
+        获取body
+        """
         return self._body
 
     @body.setter
     def body(self, body: Union[bytes, str, list, dict, RawIOBase, None]) -> None:
+        """
+        设置body
+        """
         self._body = body
 
     def handel_default(self) -> None:
@@ -271,6 +295,9 @@ class Response(object):
                     self.length = 0
             # 设置默认 Content-Length
             self.set("Content-Length", str(self.length))
+        # print(body[0], body[1])
+        if body is not None and body.startswith(encode_str("<", charset)):
+            default_type = 4
         if "Content-Type" not in self._headers.keys():
             type_str = self.type
             if type_str is None:
@@ -335,4 +362,7 @@ class Response(object):
 
     @property
     def cookies(self) -> Cookies:
+        """
+        获取cookies
+        """
         return self._cookies

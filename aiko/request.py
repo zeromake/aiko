@@ -115,7 +115,6 @@ class Request(object):
         "_URL",
         "_cookies",
         "_host",
-        "_schema",
         "_ssl",
         "_app",
         "_transport",
@@ -127,14 +126,14 @@ class Request(object):
     ]
 
     def __init__(
-        self,
-        loop: asyncio.AbstractEventLoop,
-        handle: Callable[
-            [],
-            Generator[Any, None, None],
-        ],
-        transport: Optional[asyncio.Transport] = None,
-        charset: str = DEFAULT_REQUEST_CODING,
+            self,
+            loop: asyncio.AbstractEventLoop,
+            handle: Callable[
+                [],
+                Generator[Any, None, None],
+            ],
+            transport: Optional[asyncio.Transport] = None,
+            charset: str = DEFAULT_REQUEST_CODING,
     ) -> None:
         self._loop = loop
         self._headers = cast(HEADER_TYPE, {})
@@ -152,7 +151,6 @@ class Request(object):
             Optional[sys_socket],
             transport and transport.get_extra_info('socket'),
         )
-        self._schema = "https" if self._ssl else "http"
         self._transport = transport
         self._app = cast(Any, None)
         self._default_charset = charset
@@ -427,7 +425,7 @@ class Request(object):
         """
         if self._URL is None:
             current_url = b"%s://%s%s" % (
-                encode_str(self._schema),
+                encode_str(self.schema),
                 encode_str(self.host),
                 self._current_url
             )
@@ -447,20 +445,31 @@ class Request(object):
     @property
     def schema(self) -> str:
         """
-        协议
+        返回请求协议，“https” 或 “http”。
+        当 app.proxy 是 true 时支持 X-Forwarded-Proto。
         """
-        return self.parse_url.schema
+        if self._ssl:
+            return "https"
+        proxy = bool(self.app and self.app.proxy)
+        if not proxy:
+            return "http"
+        proto = cast(str, self.get("X-Forwarded-Proto") or "http")
+        return proto.split(",")[0].strip()
 
     @property
     def protocol(self) -> str:
+        """
+        返回请求协议，“https” 或 “http”。
+        当 app.proxy 是 true 时支持 X-Forwarded-Proto。
+        """
         return self.schema
 
     @property
     def secure(self) -> bool:
         """
-        是否为 ssl
+        通过 request.schema == "https" 来检查请求是否通过 TLS 发出
         """
-        return self._ssl
+        return self.schema == "https"
 
     @property
     def charset(self) -> Optional[str]:
@@ -556,11 +565,16 @@ class Request(object):
 
     @property
     def fresh(self) -> bool:
+        """
+        检查请求缓存是否“新鲜”，也就是内容没有改变。
+        此方法用于 If-None-Match / ETag, 和 If-Modified-Since 和 Last-Modified 之间的缓存协商。
+        在设置一个或多个这些响应头后应该引用它。
+        """
         method_str = self.method
-        if 'GET' != method_str and 'HEAD' != method_str:
+        if method_str != 'GET' and method_str != 'HEAD':
             return False
         s = self.ctx.status
-        if (s >= 200 and s < 300) or 304 == s:
+        if (s >= 200 and s < 300) or s == 304:
             return fresh(
                 self.headers,
                 (self.response and self.response.headers) or {},
@@ -569,8 +583,14 @@ class Request(object):
 
     @property
     def stale(self) -> bool:
+        """
+        与 fresh 相反
+        """
         return not self.fresh
 
     @property
     def idempotent(self) -> bool:
+        """
+        检查请求是否是幂等的。
+        """
         return bool(~(STATIC_METHODS.index(self.method)))

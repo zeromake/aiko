@@ -38,19 +38,19 @@ __all__ = [
     "App",
 ]
 
-next_call_res_type = TypeGenerator[Any, None, None]
-next_call_type = Callable[[], next_call_res_type]
-middleware_res_type = Union[
+NEXT_CALL_RES_TYPE = TypeGenerator[Any, None, None]
+NEXT_CALL_TYPE = Callable[[], NEXT_CALL_RES_TYPE]
+MIDDLEWARE_RES_TYPE = Union[
     bytes,
     str,
     None,
 ]
-middleware_type = Callable[
-    [Context, next_call_type],
+MIDDLEWARE_TYPE = Callable[
+    [Context, NEXT_CALL_TYPE],
     Union[
-        middleware_res_type,
-        TypeGenerator[Any, None, middleware_res_type],
-        AsyncIterable[middleware_res_type],
+        MIDDLEWARE_RES_TYPE,
+        TypeGenerator[Any, None, MIDDLEWARE_RES_TYPE],
+        AsyncIterable[MIDDLEWARE_RES_TYPE],
     ],
 ]
 
@@ -84,14 +84,14 @@ class Application(object):
     ]
 
     def __init__(
-        self,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        protocol: Type[ServerProtocol] = ServerProtocol,
-        request: Type[Request] = Request,
-        response: Type[Response] = Response,
-        context: Type[Context] = Context,
-        requset_charset: str = DEFAULT_REQUEST_CODING,
-        response_charset: str = DEFAULT_RESPONSE_CODING,
+            self,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+            protocol: Type[ServerProtocol] = ServerProtocol,
+            request: Type[Request] = Request,
+            response: Type[Response] = Response,
+            context: Type[Context] = Context,
+            requset_charset: str = DEFAULT_REQUEST_CODING,
+            response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
         self._protocol = protocol
@@ -100,7 +100,7 @@ class Application(object):
         self._context = context
         self.requset_charset = requset_charset
         self.response_charset = response_charset
-        self._middleware = cast(List[middleware_type], [])
+        self._middleware = cast(List[MIDDLEWARE_TYPE], [])
         self.proxy = False
 
     @property
@@ -151,6 +151,9 @@ class Application(object):
         server = loop.run_until_complete(listen)
 
         def close() -> None:
+            """
+            关闭回调
+            """
             server.close()
             loop.stop()
         # print(type(server))
@@ -160,11 +163,14 @@ class Application(object):
 
     @asyncio.coroutine
     def create_server(
-        self,
-        loop: asyncio.AbstractEventLoop,
-        sock: Any,
-        ssl: SSLContext,
+            self,
+            loop: asyncio.AbstractEventLoop,
+            sock: Any,
+            ssl: SSLContext,
     ) -> TypeGenerator[Any, None, Server]:
+        """
+        提供给 Worker 使用的调用
+        """
         if loop is not None and self._loop is not loop:
             self._loop = loop
         return (yield from self.listen(
@@ -173,26 +179,29 @@ class Application(object):
         ))
 
     def _next_middleware(
-        self,
-        middlewares: Iterator[middleware_type],
-        ctx: Context,
-    ) -> next_call_type:
+            self,
+            middlewares: Iterator[MIDDLEWARE_TYPE],
+            ctx: Context,
+    ) -> NEXT_CALL_TYPE:
         """
         生成 next_call 的调用
         使用迭代器，这个方法每调用一次都会指向下一个中间件。
         """
         @asyncio.coroutine
-        def next_call() -> next_call_res_type:
+        def next_call() -> NEXT_CALL_RES_TYPE:
+            """
+            调用下一个中间件
+            """
             yield from self._middleware_call(middlewares, ctx, next_call)
         return next_call
 
     @asyncio.coroutine
     def _middleware_call(
-        self,
-        middlewares: Iterator[middleware_type],
-        ctx: Context,
-        next_call: next_call_type,
-    ) -> Any:
+            self,
+            middlewares: Iterator[MIDDLEWARE_TYPE],
+            ctx: Context,
+            next_call: NEXT_CALL_TYPE,
+    ) -> TypeGenerator[Any, None, None]:
         """
         从迭代器中取出一个中间件，执行
         """
@@ -236,14 +245,12 @@ class Application(object):
                         ctx.response.status = item
                     elif isinstance(item, dict):
                         ctx.response.headers.update(item)
-                        # for key, val in item.items():
-                        #     ctx.response.set(key, val)
             # 中间件返回的结果如果不为空设置到 body
             elif body is not None:
                 ctx.response.body = body
 
     @asyncio.coroutine
-    def _handle(self, request: Request, response: Response) -> Any:
+    def _handle(self, request: Request, response: Response) -> TypeGenerator[Any, None, None]:
         """
         request 解析后的回调，调用中间件，并处理 headers, body 发送。
         """
@@ -277,7 +284,7 @@ class Application(object):
         # 写出 body
         ctx.response.flush_body()
 
-    def use(self, middleware: middleware_type) -> None:
+    def use(self, middleware: MIDDLEWARE_TYPE) -> None:
         """
         插入一个中间件
         """

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+提供给gunicorn 进行多进程的 Worker
+"""
 
 import asyncio
 import os
@@ -10,6 +13,9 @@ from gunicorn.workers.base import Worker
 
 
 class GunicornWorker(Worker):
+    """
+    基本 Worker 把 gunicorn 分配的 sock 创建为 Server
+    """
     def __init__(self, *args: Tuple[Any], **kwargs: Dict[str, Any]) -> None:
         super().__init__(*args, **kwargs)
         self.loop = cast(Optional[asyncio.AbstractEventLoop], None)
@@ -17,6 +23,9 @@ class GunicornWorker(Worker):
         self.alive = True
 
     def init_process(self) -> None:
+        """
+        GunicornWorker 初始化回调
+        """
         default_loop = asyncio.get_event_loop()
         if default_loop.is_running():
             default_loop.close()
@@ -27,6 +36,9 @@ class GunicornWorker(Worker):
         super().init_process()
 
     def run(self) -> None:
+        """
+        创建了 sock 的运行回调
+        """
         if self.loop is None:
             return
         create_server = asyncio.ensure_future(self._run(), loop=self.loop)  # type: ignore
@@ -39,6 +51,9 @@ class GunicornWorker(Worker):
 
     @asyncio.coroutine
     def _check_alive(self) -> Generator[Any, None, None]:
+        """
+        等待结束信号
+        """
         if self.loop is None:
             return
         pid = os.getpid()
@@ -57,6 +72,9 @@ class GunicornWorker(Worker):
 
     @asyncio.coroutine
     def _run(self) -> Generator[Any, None, None]:
+        """
+        创建 Server
+        """
         ssl_context = self._create_ssl_context()
         # access_logger = self.log.access_log if self.cfg.accesslog else None
         for sock in self.sockets:
@@ -66,6 +84,9 @@ class GunicornWorker(Worker):
             self.servers.append(server)
 
     def _create_ssl_context(self) -> Optional[SSLContext]:
+        """
+        创建 ssl
+        """
         ssl_context = None
         if self.cfg.is_ssl:
             ssl_context = SSLContext(self.cfg.ssl_version)
@@ -79,13 +100,22 @@ class GunicornWorker(Worker):
 
     @asyncio.coroutine
     def close(self) -> Generator[Any, None, None]:
+        """
+        关闭回调
+        """
         for server in self.servers:
             server.close()
             yield from server.wait_closed()
 
 
 class GunicornUVLoopWorker(GunicornWorker):
+    """
+    使用uvloop的 Worker
+    """
     def init_process(self) -> None:
+        """
+        关闭上次的loop，使用新的loop.
+        """
         import uvloop
         asyncio.get_event_loop().close()
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())

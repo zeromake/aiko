@@ -16,11 +16,11 @@ __all__ = [
 
 class Context(object):
     def __init__(
-        self,
-        loop: asyncio.AbstractEventLoop,
-        request: Request,
-        response: Response,
-        app: Any,
+            self,
+            loop: asyncio.AbstractEventLoop,
+            request: Request,
+            response: Response,
+            app: Any,
     ) -> None:
         self._loop = loop
         self._request = request

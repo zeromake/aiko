@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+处理socket，生成 req，res
+"""
 
 import asyncio
 from typing import Any, Callable, cast, Generator, Optional
@@ -18,21 +21,21 @@ __all__ = ["ServerProtocol"]
 
 class ServerProtocol(asyncio.Protocol):
     """
-
+    http Protocol
     """
 
     def __init__(
-        self,
-        loop: asyncio.AbstractEventLoop,
-        handle: Callable[
-            [
-                Request,
-                Response,
+            self,
+            loop: asyncio.AbstractEventLoop,
+            handle: Callable[
+                [
+                    Request,
+                    Response,
+                ],
+                Generator[Any, None, None],
             ],
-            Generator[Any, None, None],
-        ],
-        requset_charset: str = DEFAULT_REQUEST_CODING,
-        response_charset: str = DEFAULT_RESPONSE_CODING,
+            requset_charset: str = DEFAULT_REQUEST_CODING,
+            response_charset: str = DEFAULT_RESPONSE_CODING,
     ) -> None:
         self._loop = loop
         self._transport = cast(Optional[asyncio.Transport], None)

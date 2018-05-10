@@ -10,7 +10,7 @@ aiko
     :alt: codecov
 
 .. image:: https://badge.fury.io/py/aiko.svg
-    :target: https://badge.fury.io/py/aiko
+    :target: https://pypi.org/project/aiko/
     :alt: Latest Version
 
 .. image:: https://img.shields.io/pypi/l/aiko.svg

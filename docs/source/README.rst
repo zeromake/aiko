@@ -1,6 +1,19 @@
 aiko
 ======
 
+.. image:: https://www.travis-ci.org/zeromake/aiko.svg?branch=master
+    :target: https://www.travis-ci.org/zeromake/aiko
+    :alt: travis
+
+.. image:: https://codecov.io/gh/zeromake/aiko/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/zeromake/aiko
+    :alt: codecov
+
+.. image:: https://badge.fury.io/py/aiko.svg
+    :target: https://badge.fury.io/py/aiko
+    :alt: Latest Version
+
+
 aiko is a base asyncio's lightweight web application framework.
 It is designed to make `koa`_ api.
 

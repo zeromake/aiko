@@ -12,7 +12,7 @@ sphinx = "*"
 sphinx-autobuild = "*"
 restructuredtext-lint = "*"
 pytest = "*"
-uvloop = {version = "*", sys_platform = "~= 'win32'"}
+uvloop = {version = "*", sys_platform = "!= 'win32'"}
 gunicorn = "*"
 tox = "*"
 yapf = "*"

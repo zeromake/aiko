@@ -1,0 +1,20 @@
+environment:
+  matrix:
+    - PYTHON: C:\Python36
+
+init:
+  - SET PATH=%PYTHON%\Scripts;%PYTHON%;%PATH%
+
+install:
+  - pip install pipenv
+  - pipenv install --skip-lock -d
+
+build: false
+
+test_script:
+  - tox
+  - pytest -s -v --cov-report term --cov=aiko tests
+
+branches:
+  only:
+    - master

@@ -20,3 +20,10 @@ script:
 
 after_success:
   - codecov
+
+cache:
+  - pip
+
+branches:
+  only:
+    - master

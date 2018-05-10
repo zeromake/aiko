@@ -7,11 +7,12 @@ init:
 
 install:
   - pip install pipenv
-  - pipenv install --skip-lock -d
+  - pipenv --python %PYTHON%\python.exe install --skip-lock -d
 
 build: false
 
 test_script:
+  - pipenv shell
   - tox
   - pytest -s -v --cov-report term --cov=aiko tests
 

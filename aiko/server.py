@@ -4,7 +4,7 @@
 """
 
 import asyncio
-from typing import Any, Callable, cast, Generator, Optional
+from typing import Any, Callable, cast, Generator, Optional, Union
 
 from httptools import HttpRequestParser
 
@@ -14,6 +14,7 @@ from .utils import (
     DEFAULT_HTTP_VERSION,
     DEFAULT_REQUEST_CODING,
     DEFAULT_RESPONSE_CODING,
+    json_dumps,
 )
 
 __all__ = ["ServerProtocol"]
@@ -36,6 +37,7 @@ class ServerProtocol(asyncio.Protocol):
             ],
             requset_charset: str = DEFAULT_REQUEST_CODING,
             response_charset: str = DEFAULT_RESPONSE_CODING,
+            jsondumps: Callable[[Union[list, dict, tuple]], str] = json_dumps,
     ) -> None:
         self._loop = loop
         self._transport = cast(Optional[asyncio.Transport], None)
@@ -44,6 +46,7 @@ class ServerProtocol(asyncio.Protocol):
         self._handle = handle
         self._requset_charset = requset_charset
         self._response_charset = response_charset
+        self._json_dumps = jsondumps
 
     def connection_made(self, transport: Any) -> None:
         """
@@ -87,6 +90,7 @@ class ServerProtocol(asyncio.Protocol):
             cast(asyncio.Transport, self._transport),
             self._request.version or DEFAULT_HTTP_VERSION,
             self._response_charset,
+            self._json_dumps,
         )
         keep_alive = self._request.should_keep_alive
         if not keep_alive:

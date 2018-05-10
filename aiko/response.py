@@ -4,11 +4,10 @@
 """
 
 import asyncio
-import json
 import os
 from io import RawIOBase
 from socket import socket
-from typing import Any, cast, Dict, List, Optional, Union
+from typing import Any, Callable, cast, Dict, List, Optional, Union
 
 from .cookies import Cookies
 from .utils import (
@@ -16,6 +15,7 @@ from .utils import (
     DEFAULT_RESPONSE_CODING,
     encode_str,
     HEADER_TYPE,
+    json_dumps,
 )
 
 __all__ = [
@@ -119,6 +119,7 @@ class Response(object):
         "_default_charset",
         "request",
         "ctx",
+        "_json_dumps",
     ]
 
     def __init__(
@@ -127,6 +128,7 @@ class Response(object):
             transport: asyncio.Transport,
             version: str = DEFAULT_HTTP_VERSION,
             charset: str = DEFAULT_RESPONSE_CODING,
+            jsondumps: Callable[[Union[list, dict, tuple]], str] = json_dumps,
     ) -> None:
         self._loop = loop
         self._transport = transport
@@ -160,6 +162,7 @@ class Response(object):
         self._app = cast(Any, None)
         self.request = cast(Any, None)
         self.ctx = cast(Any, None)
+        self._json_dumps = jsondumps
 
     @property
     def app(self) -> Any:
@@ -276,10 +279,10 @@ class Response(object):
             # body 为字符串
             default_type = 2
             body = encode_str(raw_body, charset)
-        elif isinstance(raw_body, (list, dict)):
+        elif isinstance(raw_body, (tuple, list, dict)):
             # body 为json
             default_type = 3
-            body = encode_str(json.dumps(raw_body, ensure_ascii=False), charset)
+            body = encode_str(self._json_dumps(raw_body), charset)
         elif isinstance(raw_body, RawIOBase):
             # body 为文件
             default_type = 1

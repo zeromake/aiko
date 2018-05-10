@@ -3,8 +3,10 @@
 各种工具
 """
 import asyncio
+import json
 from datetime import datetime
 from typing import Any, cast, Dict, List, Optional, Set, Union
+
 
 __all__ = [
     "decode_bytes",
@@ -272,3 +274,10 @@ class ProxyAttr(object):
             self._getter,
             self._setter
         )
+
+
+def json_dumps(obj: Union[list, tuple, dict]) -> str:
+    """
+    统一的json dumps
+    """
+    return json.dumps(obj)

@@ -31,6 +31,7 @@ from .utils import (
     DEFAULT_REQUEST_CODING,
     DEFAULT_RESPONSE_CODING,
     handle_async_gen,
+    json_dumps,
 )
 
 __all__ = [
@@ -77,6 +78,7 @@ class Application(object):
         "_request",
         "_response",
         "_context",
+        "jsondumps",
         "_middleware",
         "requset_charset",
         "response_charset",
@@ -92,6 +94,7 @@ class Application(object):
             context: Type[Context] = Context,
             requset_charset: str = DEFAULT_REQUEST_CODING,
             response_charset: str = DEFAULT_RESPONSE_CODING,
+            jsondumps: Callable[[Union[list, dict, tuple]], str] = json_dumps,
     ) -> None:
         self._loop = loop
         self._protocol = protocol
@@ -101,6 +104,7 @@ class Application(object):
         self.requset_charset = requset_charset
         self.response_charset = response_charset
         self._middleware = cast(List[MIDDLEWARE_TYPE], [])
+        self.jsondumps = jsondumps
         self.proxy = False
 
     @property
@@ -136,6 +140,7 @@ class Application(object):
                 handle=self._handle,
                 requset_charset=self.requset_charset,
                 response_charset=self.response_charset,
+                jsondumps=self.jsondumps,
             ),
             **kwargs,
         ))

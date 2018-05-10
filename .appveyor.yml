@@ -7,14 +7,13 @@ init:
 
 install:
   - pip install pipenv
-  - pipenv --python %PYTHON%\python.exe install --skip-lock -d
+  - pipenv --python %PYTHON%\Python.exe install --skip-lock -d
 
 build: false
 
 test_script:
-  - pipenv shell
-  - tox
-  - pytest -s -v --cov-report term --cov=aiko tests
+  - pipenv run tox
+  - pipenv run pytest -s -v --cov-report term --cov=aiko tests
 
 branches:
   only:

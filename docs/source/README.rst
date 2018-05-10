@@ -13,6 +13,16 @@ aiko
     :target: https://badge.fury.io/py/aiko
     :alt: Latest Version
 
+.. image:: https://img.shields.io/pypi/l/aiko.svg
+    :target: https://github.com/zeromake/aiko/blob/master/LICENSE
+    :alt: PyPI - License
+
+.. image:: https://img.shields.io/pypi/format/aiko.svg
+    :target: https://pypi.org/project/aiko/#files
+    :alt: PyPI - Format
+
+.. image:: https://img.shields.io/pypi/pyversions/aiko.svg
+    :alt: PyPI - PyVersions
 
 aiko is a base asyncio's lightweight web application framework.
 It is designed to make `koa`_ api.

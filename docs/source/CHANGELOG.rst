@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+Version 0.2.3
+-------------
+
+Relesed on 2018-05-10
+
+- **fix** pypy, python3.5 typing
+- **add** auto body start is `<` default set `text/html`
+- **add** travis test, codecov cov
+- **docs** readme add more img
+
 Version 0.2.2
 -------------
 

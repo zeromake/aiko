@@ -10,15 +10,12 @@ install:
   - pipenv install --skip-lock -d
 
 script:
-  - if type pypy >/dev/null 2>&1; then
-        echo "pypy cov"
-        make cov
-    elif python -c "import sys; sys.exit(not(sys.version_info >= (3,6)))"; then
-        echo "py3.6 test"
-        make test
+  - if python -c "import sys; sys.exit(not(sys.version_info >= (3,6)))"; then
+        echo "py3.6 test";
+        make test;
     else
-        echo "py3.5 cov"
-        make cov
+        echo "py3.5 cov";
+        make cov;
     fi
 
 after_success:

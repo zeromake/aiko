@@ -66,11 +66,6 @@ A Simple Example
     $ curl http://127.0.0.1:5000
     Hello, World!
 
-Links
------
-
-.. _koa: https://github.com/koajs/koa
-
 Todo
 ----
 
@@ -116,4 +111,32 @@ Todo
         - [x] `ip`
 - [ ] response api like koa
 - [x] proxy class property attr and method
-- [x] like `fresh <https://github.com/jshttp/fresh>`_ method
+- [x] like `fresh`_ method
+- [ ] request.`on_body` pause_reading designed by `uvicorn`_
+
+Reference by
+------------
+
++ http framework
+    - `koa`_ node 上的简洁 api 的 http framework
+    - `sanic`_ 使用 asyncio + httptools，api 类似 flask 源代码混乱。
+    - `quart`_ 使用 asyncio，api 兼容 flask 解析器过慢。
+    - `uvicorn`_ 使用 asyncio + httptools, asgi 规范实现。
+    - `japronto`_ 使用 asyncio + picohttpparser, 全 c 构建，性能最强。
++ http tools
+    - `fresh`_ 判断 `headers` 是否返回 304
++ specification
+    - `asgiref`_ asgi 协议
+    - `mdn`_ mdn 的 http 协议说明
+
+Links
+-----
+
+.. _koa: https://github.com/koajs/koa
+.. _uvicorn: https://github.com/encode/uvicorn
+.. _sanic: https://github.com/channelcat/sanic
+.. _asgiref: https://github.com/django/asgiref
+.. _japronto: https://github.com/squeaky-pl/japronto
+.. _quart: https://gitlab.com/pgjones/quart
+.. _fresh: https://github.com/jshttp/fresh
+.. _mdn: https://developer.mozilla.org/zh-CN/docs/Web/HTTP

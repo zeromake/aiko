@@ -4,7 +4,6 @@
 """
 
 import asyncio
-import os
 from io import RawIOBase
 from socket import socket
 from typing import Any, Callable, cast, Dict, List, Optional, Union
@@ -208,7 +207,8 @@ class Response(object):
         """
         同步写入socket
         """
-        os.write(self._fileno, data)
+        self._transport.write(data)
+        cast(asyncio.BaseProtocol, cast(Any, self._transport).get_protocol()).pause_writing()
 
     def write(self, data: bytes, sync: bool = False) -> None:
         """

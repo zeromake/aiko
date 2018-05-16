@@ -20,7 +20,6 @@ class TestRequest(BaseTest):
         query_string = urlencode(query)
         url = "/?" + query_string
 
-        @asyncio.coroutine
         def request_complete() -> None:
             try:
                 # url host
@@ -45,7 +44,8 @@ class TestRequest(BaseTest):
             except AssertionError as e:
                 future.set_exception(e)
 
-        self.request = Request(self.loop, request_complete)
+        self.request = Request(self.loop)
+        self.request.once("request", request_complete)
         self.parser = HttpRequestParser(self.request)
         self.request.parser = self.parser
         self.request.feed_data(

@@ -2,13 +2,14 @@
 
 import asyncio
 from socket import socket as sys_socket
-from typing import Any, Callable, cast, Dict, Generator, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, Union
 from urllib.parse import parse_qs, unquote, urlencode
 # from datetime import datetime
 
 from httptools import HttpRequestParser, parse_url
 
 from .cookies import Cookies
+from .events import EventEmitter
 from .utils import (
     decode_bytes,
     DEFAULT_REQUEST_CODING,
@@ -99,7 +100,7 @@ class RequestUrl(object):
         return href_str
 
 
-class Request(object):
+class Request(EventEmitter):
     """
     请求
     """
@@ -107,7 +108,6 @@ class Request(object):
         "_loop",
         "_headers",
         "_current_url",
-        "_handle",
         "_parser",
         "_method",
         "_version",
@@ -128,17 +128,13 @@ class Request(object):
     def __init__(
             self,
             loop: asyncio.AbstractEventLoop,
-            handle: Callable[
-                [],
-                Generator[Any, None, None],
-            ],
             transport: Optional[asyncio.Transport] = None,
             charset: str = DEFAULT_REQUEST_CODING,
     ) -> None:
+        super().__init__()
         self._loop = loop
         self._headers = cast(HEADER_TYPE, {})
         self._current_url = b""
-        self._handle = handle
         self._parser = cast(HttpRequestParser, None)
         self._method = cast(Optional[str], None)
         self._version = cast(Optional[str], None)
@@ -233,7 +229,14 @@ class Request(object):
         """
         header 回调完成
         """
-        self._loop.create_task(self._handle())
+        self.emit("request")
+        # self._loop.create_task(self._handle())
+
+    def on_body(self, data: bytes) -> None:
+        self.emit("body", data)
+
+    def on_message_complete(self) -> None:
+        self.emit("complete")
 
     @property
     def method(self) -> str:

@@ -71,12 +71,18 @@ class ServerProtocol(asyncio.Protocol):
             # future = self._loop.create_future()
             self._request = Request(
                 cast(asyncio.AbstractEventLoop, self._loop),
-                self.complete_handle,
                 cast(asyncio.Transport, self._transport),
                 charset=self._requset_charset,
             )
+            self._request.once(
+                "request",
+                self._complete_handle,
+            )
             self._request.parser = HttpRequestParser(self._request)
         self._request.feed_data(data)
+
+    def _complete_handle(self) -> None:
+        self._loop.create_task(self.complete_handle())
 
     @asyncio.coroutine
     def complete_handle(self) -> Generator[Any, None, None]:

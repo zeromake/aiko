@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Any, List, Optional
+from typing import Any, List, Optional, TYPE_CHECKING
 # from weakref import proxy
 
-from .request import Request
-from .response import Response
 from .utils import ProxyAttr
+
+if TYPE_CHECKING:
+    from aiko.request import Request
+    from aiko.response import Response
+    from aiko.application import Application
 
 
 __all__ = [
@@ -18,9 +21,9 @@ class Context(object):
     def __init__(
             self,
             loop: asyncio.AbstractEventLoop,
-            request: Request,
-            response: Response,
-            app: Any,
+            request: 'Request',
+            response: 'Response',
+            app: 'Application',
     ) -> None:
         self._loop = loop
         self._request = request
@@ -29,11 +32,11 @@ class Context(object):
         self._app = app
 
     @property
-    def app(self) -> Any:
+    def app(self) -> 'Application':
         return self._app
 
     @app.setter
-    def app(self, app: Any) -> None:
+    def app(self, app: 'Application') -> None:
         self._app = app
 
     @property
@@ -41,11 +44,11 @@ class Context(object):
         return self._loop
 
     @property
-    def request(self) -> Request:
+    def request(self) -> 'Request':
         return self._request
 
     @property
-    def response(self) -> Response:
+    def response(self) -> 'Response':
         return self._response
 
     @property

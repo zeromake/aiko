@@ -2,7 +2,7 @@
 
 import asyncio
 from socket import socket as sys_socket
-from typing import Any, cast, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, unquote, urlencode
 # from datetime import datetime
 
@@ -18,6 +18,11 @@ from .utils import (
     HEADER_TYPE,
     STATIC_METHODS,
 )
+
+if TYPE_CHECKING:
+    from .application import Application
+    from .context import Context
+    from .response import Response
 
 __all__ = [
     "Request",
@@ -148,10 +153,10 @@ class Request(EventEmitter):
             transport and transport.get_extra_info('socket'),
         )
         self._transport = transport
-        self._app = cast(Any, None)
+        self._app = cast(Optional['Application'], None)
         self._default_charset = charset
-        self.response = cast(Any, None)
-        self.ctx = cast(Any, None)
+        self.response = cast(Optional['Response'], None)
+        self.ctx = cast(Optional['Context'], None)
 
     @property
     def default_charset(self) -> str:
@@ -265,14 +270,14 @@ class Request(EventEmitter):
 
     # 仿 koa api
     @property
-    def app(self) -> Any:
+    def app(self) -> Optional['Application']:
         """
         web app 用与获取配置
         """
         return self._app
 
     @app.setter
-    def app(self, app: Any) -> None:
+    def app(self, app: 'Application') -> None:
         """
         设置app到
         """
@@ -285,7 +290,7 @@ class Request(EventEmitter):
         """
         if self.app is None:
             return False
-        return bool(cast(Any, self.app).proxy)
+        return bool(self.app.proxy)
 
     @property
     def socket(self) -> Optional[sys_socket]:
@@ -576,7 +581,7 @@ class Request(EventEmitter):
         method_str = self.method
         if method_str != 'GET' and method_str != 'HEAD':
             return False
-        s = self.ctx.status
+        s = cast('Response', self.response).status
         if (s >= 200 and s < 300) or s == 304:
             return fresh(
                 self.headers,

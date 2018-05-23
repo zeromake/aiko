@@ -6,7 +6,7 @@
 import asyncio
 from io import RawIOBase
 from socket import socket
-from typing import Any, Callable, cast, Dict, List, Optional, Union
+from typing import Any, Callable, cast, Dict, List, Optional, TYPE_CHECKING, Union
 
 from .cookies import Cookies
 from .utils import (
@@ -94,6 +94,11 @@ DEFAULT_TYPE = cast(
     },
 )
 
+if TYPE_CHECKING:
+    from .application import Application
+    from .context import Context
+    from .request import Request
+
 
 class Response(object):
     """
@@ -158,20 +163,20 @@ class Response(object):
         self._default_charset = charset
         self._headers_sent = False
         self._cookies = Cookies()
-        self._app = cast(Any, None)
-        self.request = cast(Any, None)
-        self.ctx = cast(Any, None)
+        self._app = cast('Application', None)
+        self.request = cast('Request', None)
+        self.ctx = cast('Context', None)
         self._json_dumps = jsondumps
 
     @property
-    def app(self) -> Any:
+    def app(self) -> 'Application':
         """
         应用实例
         """
         return self._app
 
     @app.setter
-    def app(self, app: Any) -> None:
+    def app(self, app: 'Application') -> None:
         """
         设置应用实例
         """

@@ -34,6 +34,7 @@ setup(
         'httptools>=0.0.11',
     ],
     classifiers=[
+        'Framework :: AsyncIO',
         'Environment :: Web Environment',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3 :: Only',
@@ -43,5 +44,6 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
     ],
 )

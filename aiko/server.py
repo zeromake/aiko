@@ -67,7 +67,7 @@ class ServerProtocol(asyncio.Protocol):
         socket 收到数据
         """
         # print(data)
-        if self._request is None:
+        if not self._request:
             # future = self._loop.create_future()
             self._request = Request(
                 cast(asyncio.AbstractEventLoop, self._loop),
@@ -89,7 +89,7 @@ class ServerProtocol(asyncio.Protocol):
         """
         完成回调
         """
-        if self._request is None:
+        if not self._request:
             return
         self._response = Response(
             self._loop,
@@ -102,7 +102,7 @@ class ServerProtocol(asyncio.Protocol):
         if not keep_alive:
             self._response.set("Connection", "close")
         yield from self._handle(self._request, self._response)
-        if not keep_alive and self._transport is not None:
+        if not keep_alive and self._transport:
             self._transport.close()
         # self._request_parser = None
         self._request = None

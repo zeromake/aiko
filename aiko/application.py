@@ -176,7 +176,7 @@ class Application(object):
         """
         提供给 Worker 使用的调用
         """
-        if loop is not None and self._loop is not loop:
+        if loop and not (self._loop is loop):
             self._loop = loop
         return (yield from self.listen(
             sock=sock,
@@ -221,7 +221,7 @@ class Application(object):
             body = yield from temp
         else:
             body = middleware(ctx, next_call)
-        if body is not None:
+        if body:
             if isinstance(body, Generator):
                 gen_obj = body
                 body = None
@@ -232,7 +232,7 @@ class Application(object):
                         temp = yield from handle_async_gen(gen, gen_obj)
                     except StopIteration:
                         break
-                    if temp is not None:
+                    if temp:
                         body = temp
             # elif asyncio.iscoroutine(body):
             #     # 处理中间件返回了一个 coroutine 对象需要 await
@@ -251,7 +251,7 @@ class Application(object):
                     elif isinstance(item, dict):
                         ctx.response.headers.update(item)
             # 中间件返回的结果如果不为空设置到 body
-            elif body is not None:
+            elif body:
                 ctx.response.body = body
 
     @asyncio.coroutine
@@ -282,7 +282,7 @@ class Application(object):
         yield from self._middleware_call(middleware_iter, ctx, next_call)
         # 设置 cookies
         cookies_headers = ctx.cookies.headers()
-        if cookies_headers is not None:
+        if cookies_headers:
             ctx.response.set("Set-Cookie", cookies_headers)
         # 写出 headers
         ctx.response.flush_headers()

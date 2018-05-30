@@ -56,13 +56,13 @@ class RequestUrl(object):
         self.userinfo = cast(Optional[str], self.decode_bytes(url.userinfo))
 
     def decode_bytes(self, data: Optional[bytes]) -> Optional[str]:
-        if data is not None:
+        if data:
             return decode_bytes(data, self.coding)
         return None
 
     @property
     def query(self) -> Optional[RequestParameters]:
-        if self.querystring is not None:
+        if self.querystring:
             return RequestParameters(parse_qs(self.querystring))
         return None
 
@@ -73,9 +73,9 @@ class RequestUrl(object):
     @property
     def raw_query(self) -> Optional[Dict[str, str]]:
         query_obj = self.query
-        if query_obj is not None:
+        if query_obj:
             return {
-                k: v[0] for k, v in query_obj.items() if v is not None and len(v) > 1
+                k: v[0] for k, v in query_obj.items() if v and len(v) > 1
             }
         return None
 
@@ -87,18 +87,18 @@ class RequestUrl(object):
         href_arr = cast(List[str], [])
         href_arr.append(self.schema)
         href_arr.append("://")
-        if self.userinfo is not None:
+        if self.userinfo:
             href_arr.append(self.userinfo)
             href_arr.append("@")
         href_arr.append(self.host)
-        if self.port is not None:
+        if self.port:
             href_arr.append(":%d" % self.port)
-        if self.path is not None:
+        if self.path:
             href_arr.append(self.path)
-        if self.querystring is not None:
+        if self.querystring:
             href_arr.append("?")
             href_arr.append(self.querystring)
-        if self.fragment is not None:
+        if self.fragment:
             href_arr.append("#")
             href_arr.append(self.fragment)
         href_str = "".join(href_arr)
@@ -147,7 +147,7 @@ class Request(EventEmitter):
         self._URL = cast(Optional[RequestUrl], None)
         self._cookies = Cookies()
         self._host = ""
-        self._ssl = bool(transport is not None and transport.get_extra_info('sslcontext'))
+        self._ssl = bool(transport and transport.get_extra_info('sslcontext'))
         self._socket = cast(
             Optional[sys_socket],
             transport and transport.get_extra_info('socket'),
@@ -186,14 +186,14 @@ class Request(EventEmitter):
         """
         由于这个对象实例化需要作为 HttpRequestParser 所以只能后面设置
         """
-        if self._parser is None:
+        if not self._parser:
             self._parser = parser
 
     def feed_data(self, data: bytes) -> None:
         """
         代理 feed_data
         """
-        if self._parser is not None:
+        if self._parser:
             self._parser.feed_data(data)
 
     @property
@@ -201,7 +201,7 @@ class Request(EventEmitter):
         """
         判断是否为 keep_alive 是开启长连接
         """
-        if self._parser is not None:
+        if self._parser:
             return self._parser.should_keep_alive()
         return None
 
@@ -248,7 +248,7 @@ class Request(EventEmitter):
         """
         获取请求方法
         """
-        if self._method is None:
+        if not self._method:
             self._method = decode_bytes(self._parser.get_method())
         return self._method
 
@@ -264,7 +264,7 @@ class Request(EventEmitter):
         """
         获取 http 版本
         """
-        if self._version is None:
+        if not self._version:
             self._version = self._parser.get_http_version()
         return self._version
 
@@ -288,7 +288,7 @@ class Request(EventEmitter):
         """
         从 app 读取是否判断 proxy
         """
-        if self.app is None:
+        if not self.app:
             return False
         return bool(self.app.proxy)
 
@@ -305,7 +305,7 @@ class Request(EventEmitter):
         获取 body 长度
         """
         len_ = self.get("content-length")
-        if len_ is not None:
+        if len_:
             return int(cast(str, len_))
         return None
 
@@ -339,7 +339,7 @@ class Request(EventEmitter):
         path + query 的url
         """
         url_str = self.parse_url.path or ""
-        if self.parse_url.querystring is not None:
+        if self.parse_url.querystring:
             url_str += "?" + self.parse_url.querystring
         return url_str
 
@@ -359,7 +359,7 @@ class Request(EventEmitter):
         获取 path
         """
         path_str = self.parse_url.path
-        if path_str is not None and "%" in path_str:
+        if path_str and "%" in path_str:
             path_str = unquote(path_str)
         return path_str
 
@@ -431,7 +431,7 @@ class Request(EventEmitter):
         """
         获取url解析对象
         """
-        if self._URL is None:
+        if not self._URL:
             current_url = b"%s://%s%s" % (
                 encode_str(self.schema),
                 encode_str(self.host),
@@ -485,7 +485,7 @@ class Request(EventEmitter):
         获取 charset
         """
         type_str = cast(str, self.get("Content-Type"))
-        if type_str is None or "charset" not in type_str:
+        if not type_str or "charset" not in type_str:
             return None
         for i in type_str.split(";"):
             item = i.strip()
@@ -499,7 +499,7 @@ class Request(EventEmitter):
         获取 type
         """
         type_str = cast(Optional[str], self.get("Content-Type"))
-        if type_str is not None:
+        if type_str:
             return type_str.split(";")[0]
         else:
             return None
@@ -512,7 +512,7 @@ class Request(EventEmitter):
         host = cast(Optional[str], None)
         if self.proxy and 'X-Forwarded-Host' in self._headers:
             xhost = cast(Optional[str], self.get('X-Forwarded-Host'))
-            if xhost is not None:
+            if xhost:
                 host = xhost.split(",")[0].strip()
         host = host or cast(str, self.get('Host'))
         return host

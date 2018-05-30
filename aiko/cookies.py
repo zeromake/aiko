@@ -40,7 +40,7 @@ class Cookies(BaseCookie):
         设置 cookie.value 并设置属性
         """
         self[key] = value
-        if opt is not None:
+        if opt:
             self[key].update(opt)
 
     def __iter__(self) -> Any:

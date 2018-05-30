@@ -49,7 +49,7 @@ def handle_async_gen(gen: Any, gen_obj: Any) -> Any:
     """
     处理异步生成器
     """
-    if gen is None:
+    if not gen:
         return None
     if asyncio.iscoroutine(gen):
         try:
@@ -96,19 +96,19 @@ def fresh(req_headers: HEADER_TYPE, res_headers: HEADER_TYPE) -> bool:
     if not modified_since and not none_match:
         return False
     cache_control = req_headers.get('cache-control')
-    if cache_control is not None:
+    if cache_control:
         if isinstance(cache_control, list):
             for control in cache_control:
                 if control.strip() == "no-cache":
                     return False
         elif cache_control.strip() == "no-cache":
             return False
-    if none_match is not None and none_match != "*":
+    if none_match and none_match != "*":
         etag = cast(
             Optional[str],
             res_headers.get('ETag') or res_headers.get('etag'),
         )
-        if etag is None:
+        if not etag:
             return False
         if etag.startswith("W/"):
             etag = etag[2:]
@@ -129,7 +129,7 @@ def fresh(req_headers: HEADER_TYPE, res_headers: HEADER_TYPE) -> bool:
             res_headers.get('Last-Modified') or res_headers.get('last-modified'),
         )
         modified_stale = True
-        if last_modified is not None:
+        if last_modified:
             last_date = parse_http_date(last_modified)
             modified_date = parse_http_date(modified_since)
             if last_date != 0 and modified_date != 0 and last_date <= modified_date:
@@ -194,7 +194,7 @@ class ProxyAttr(object):
         """
         为类设置代理 method
         """
-        if rename is None:
+        if not rename:
             rename = name
         if self.reuse_handle(name, rename, self._method):
             return self
@@ -213,7 +213,7 @@ class ProxyAttr(object):
         """
         为类设置代理 getattr
         """
-        if rename is None:
+        if not rename:
             rename = name
         if self.reuse_handle(name, rename, self._getter):
             return self
@@ -239,7 +239,7 @@ class ProxyAttr(object):
         """
         为类设置代理 setter
         """
-        if rename is None:
+        if not rename:
             rename = name
         if self.reuse_handle(name, rename, self._setter):
             return self

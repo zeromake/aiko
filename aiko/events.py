@@ -133,7 +133,7 @@ class EventEmitter(object):
         return self.prepend_listener(event_name, func)
 
     def remove_all_listeners(self, event_name: str = None) -> 'EventEmitter':
-        if event_name is None:
+        if not event_name:
             self._listeners = {}
         elif event_name in self._listeners:
             self._listeners[event_name] = []

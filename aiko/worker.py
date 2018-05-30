@@ -39,7 +39,7 @@ class GunicornWorker(Worker):
         """
         创建了 sock 的运行回调
         """
-        if self.loop is None:
+        if not self.loop:
             return
         create_server = asyncio.ensure_future(self._run(), loop=self.loop)  # type: ignore
         try:
@@ -54,7 +54,7 @@ class GunicornWorker(Worker):
         """
         等待结束信号
         """
-        if self.loop is None:
+        if not self.loop:
             return
         pid = os.getpid()
         try:

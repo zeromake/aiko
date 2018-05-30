@@ -274,7 +274,7 @@ class Response(object):
         body = cast(Optional[bytes], None)
         default_type = 2
         charset = self._charset or self._default_charset
-        if raw_body is None:
+        if not raw_body:
             pass
         elif isinstance(raw_body, bytes):
             # body为bytes
@@ -296,25 +296,25 @@ class Response(object):
         if "Content-Length" not in self._headers and \
                 "Transfer-Encoding" not in self._headers \
                 or self._headers["Transfer-Encoding"] != "chunked":
-            if self.length is None:
-                if body is not None:
+            if not self.length:
+                if body:
                     self.length = len(body)
                 else:
                     self.length = 0
             # 设置默认 Content-Length
             self.set("Content-Length", str(self.length))
         # print(body[0], body[1])
-        if body is not None and body.startswith(encode_str("<", charset)):
+        if body and body.startswith(encode_str("<", charset)):
             default_type = 4
         if "Content-Type" not in self._headers.keys():
             type_str = self.type
-            if type_str is None:
+            if not type_str:
                 temp = DEFAULT_TYPE.get(default_type)
-                if temp is not None:
+                if temp:
                     if default_type != 1:
                         temp += "; charset=%s" % charset
                     type_str = temp
-            if type_str is not None:
+            if type_str:
                 # 设置默认 Content-Type
                 self.set("Content-Type", type_str)
         self._body = body
@@ -361,7 +361,7 @@ class Response(object):
         """
         发送内容体
         """
-        if self._body is None:
+        if not self._body:
             return False
         elif isinstance(self._body, bytes):
             self.write(self._body)
